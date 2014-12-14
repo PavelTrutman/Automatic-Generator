@@ -18,6 +18,6 @@ rem to help find cygwin.dll
 set PATH=%PATH%;%M2HOME%\..\..\bin
 
 rem  Don't change this line.
-"%M2WINH%\libexec\Macaulay2" -tty -ephase=1 "%M2HOME%/m2/setup.m2" -ephase=0 '-e runStartFunctions()' '-silent' '-e load "D:/Dokumenty/Skola/CMP/gbsolver-GJ-Red/gbsMacaulay/code.m2"'
+"%M2WINH%\libexec\Macaulay2" -tty -ephase=1 "%M2HOME%/m2/setup.m2" -ephase=0 '-e runStartFunctions()' '-silent' '-e load "D:/Dokumenty/Skola/CMP/gbs.git/gbsMacaulay/code.m2"'
 
 

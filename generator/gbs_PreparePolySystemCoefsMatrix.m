@@ -360,17 +360,14 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
     % remove not necesary polynomials
     fprintf('Removing not necesary polynomials\n');
     rows = size(M, 1);
-    step = floor(rows/32);
-    if step < 1
-      step = 1;
-    end
-    down = rows;
+    step = max([floor(rows/32) 1]);
+    up = 1;
     filter = 1:rows;
     
-    while down >= 1
-      up = down - step + 1;
-      if up < 1
-        up = 1;
+    while up <= rows
+      down = up + step - 1;
+      if down > rows
+        down = rows;
         step = down - up + 1;
       end
       
@@ -387,17 +384,14 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
       
       if var == foundVar
         fprintf('succeeded\n');
-        down = up - 1;
+        up = down + 1;
         step = 2*step;
       else
         fprintf('failed\n');
         if step == 1
-          down = down - 1;
+          up = up + 1;
         else
-          step = floor(step / 4);
-          if step < 1
-            step = 1;
-          end
+          step = max([floor(step / 4) 1]);
         end
         filter = filterOld;
       end

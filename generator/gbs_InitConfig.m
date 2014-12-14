@@ -13,7 +13,7 @@ function [cfg] = gbs_InitConfig()
 
     % how much will be the degrees of the polynoms enlarged before performing GJ elimination
     % 0 means perform only one GJ elimination at the end
-    cfg.GJstep = 0;
+    cfg.GJstep = 1;
     
     %
     % list of equations which should be used in Groebner basis solver (cfg.GBSolver).
