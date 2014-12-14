@@ -1,0 +1,45 @@
+Copyright 
+
+2008 Martin Bujnak, Zuzana Kukelova, Tomas Pajdla CTU in Prague. 
+2014 Pavel Trutman, Zuzana Kukelova, Tomas Pajdla CTU in Prague
+
+All Rights Reserved.
+
+ Permission to use [*] this software for academic purposes is hereby
+ granted without fee or royalty, subject to the following conditions.
+
+ 1. The software is provided "as is" by the copyright holder, with
+ absolutely no actual or implied warranty of correctness, fitness,
+ intellectual property ownership, or anything else whatsoever. You use
+ the software entirely at your own risk. In no event shall the copyright
+ holder be liable for any direct, indirect or perceived damage whatsoever
+ connected with the use of this work.
+
+ 2. The software may not be distributed [*], whether in its original
+ or modified form, without explicit written consent from the copyright
+ holder.
+
+ 3. The copyright holder retains all copyright to the work.
+
+ 4. Any scholarly work, research or publication making use of this
+ software must explicitly acknowledge the copyright holder. In the
+ case of a publication, citation of the work, and authors thereof,
+ titled
+
+   "Kukelova Z., Bujnak M., Pajdla T., Automatic Generator of Minimal
+    Problem Solvers, ECCV 2008, Marseille, France, October 12-18, 2008"
+
+ is deemed sufficient acknowledgement.
+
+ Permission to use or distribute [*] this software for commercial or
+ military purposes, or under any conditions not covered by the conditions
+ 1-4 above, is NOT granted. Such permission may be obtained subject to
+ explicit prior written consent from the copyright holder.
+
+ [*] `Use' denotes any use whatsoever including downloading, compilation,
+ execution and modification. `Distribution' includes any distribution of
+ the software and any derived works such as object files, executable
+ programs and libraries.
+
+Contact: Tomas Pajdla: pajdla@cmp.felk.cvut.cz
+
