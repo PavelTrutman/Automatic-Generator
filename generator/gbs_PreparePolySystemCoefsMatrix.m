@@ -131,34 +131,29 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
     end
 
     fprintf('Adding polynomials\n');
-    fprintf('  Initializing matrix size %dx%d\n', length(eq), length(allmons));
     
     % count rows
     rowsalloc = 0;
     for i = 1:length(eq);
-      for j = p{i}.maxdeg:maxdeg
+      for j = p{i}.maxdeg+1:maxdeg-1
         rowsalloc = rowsalloc + nchoosek(j - p{i}.maxdeg + length(unknown) - 1, length(unknown) - 1);
       end
     end
+    rowsalloc = rowsalloc + length(eq);
     
     % initial size
     cols = size(allmonsdeg, 2);
     M = zeros(rowsalloc, cols);
     Mcoefs  = zeros(rowsalloc, cols);
     
+    fprintf('  Initializing matrix size %dx%d\n', rowsalloc, cols);
+    
     % insert polynomials into matrices
-    equations = zeros(1, length(eq));
+    equations = rowsalloc - length(p) + 1:rowsalloc;
     row = 1;
     for i = 1:length(p)
-      equations(i) = row;
-      for deg = 0:maxdeg - p{i}.maxdeg
-        if deg == 0
-          mons = '1';
-          degs = zeros(1, length(unknown));
-        else
-          [mons, degs] = GenerateMonomials(deg, unknown, ordering);
-        end
-        
+      for deg = 1:maxdeg - p{i}.maxdeg - 1
+        [mons, degs] = GenerateMonomials(deg, unknown, ordering);
         for j = 1:length(mons)
           for k = 1:p{i}.monscnt
             monnew = alldegs(length(allmonsdeg) - GetMonomialOrder(char(p{i}.mons(k)), unknown) + 1, :) + degs(j, :);
@@ -169,6 +164,15 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
           row = row + 1;
         end
       end
+    end
+    for i = 1:length(p)
+      for k = 1:p{i}.monscnt
+        monnew = alldegs(length(allmonsdeg) - GetMonomialOrder(char(p{i}.mons(k)), unknown) + 1, :);
+        order = GetMonomialOrder(monnew, unknown);
+        M(row, cols - (order - 1)) =  p{i}.coefs(k);
+        Mcoefs(row, cols - (order - 1)) = p{i}.coefsIDX(k);
+      end
+      row = row + 1;
     end
     
     iteration = 1;
@@ -181,29 +185,28 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
     MGJ(:, nonzero) = B;
     var = gbs_CheckActionMatrixConditions(MGJ, amStats, true, prime);
     
-    todeg = maxdeg + 1;
+    todeg = maxdeg;
     if GJstep == 0
       nextElim = -1;
     else
-      nextElim = 2;
+      nextElim = 1;
     end
     
-    if GJstep ~= 1
-      MGJ = M;
-      first = true;
-    else
-      first = false;
-    end
+    first = true;
+    equationsAddedOld = length(p);
     
     % generate polynomials
     while var == 0
-      Mold = MGJ;
       if first
         MoldCoefs = Mcoefs;
+        Mold = M;
         first = false;
       else
         MoldCoefs = zeros(size(Mold, 1), size(Mold, 2));
+        Mold = MGJ;
       end
+      
+      todegOld = todeg;
       
       while nextElim <= GJstep
         alldegsold = alldegs;
@@ -216,20 +219,26 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
         for i = equations
           [~, id] = find(Mold(i, :), 1, 'first');
           degsold(i) = allmonsdegold(id);
-          rows = rows + nchoosek(todeg - degsold(i) + length(unknown) - 1, length(unknown) - 1);
+          if degsold(i) < todeg
+            rows = rows + nchoosek(todeg - degsold(i) + length(unknown) - 1, length(unknown) - 1);
+          end
         end
         rows = rows + rowsold;
       
         % reallocate cols
-        [mons, degs] = GenerateMonomials(todeg, unknown, ordering);
-        allmons = [mons allmons];
-        alldegs = [degs; alldegs];
-        allmonsdeg = [todeg*ones(1, length(mons)) allmonsdeg];            
-        cols = size(allmonsdeg, 2);
-        for a=1:length(amStats)
-          amStats{a}.zero_el = setdiff(1:cols, (cols+1)-amStats{a}.algBidx);
+        if todeg > maxdeg
+          maxdeg = todeg;
+          [mons, degs] = GenerateMonomials(todeg, unknown, ordering);
+          allmons = [mons allmons];
+          alldegs = [degs; alldegs];
+          allmonsdeg = [todeg*ones(1, length(mons)) allmonsdeg];
+          cols = size(allmonsdeg, 2);
+          for a=1:length(amStats)
+            amStats{a}.zero_el = setdiff(1:cols, (cols+1)-amStats{a}.algBidx);
+          end
+          fprintf('  Coefficient matrix reallocaction, adding %d (%d degree) monomials\n', length(mons), todeg);
         end
-        fprintf('  Coefficient matrix reallocaction, adding %d (%d degree) monomials and %d equations\n', length(mons), todeg, rows - rowsold);
+        fprintf('  %d equations added\n', rows - rowsold);
         
         % prepare new matrices
         M = zeros(rows, cols);
@@ -240,20 +249,22 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
         % generate new polynomials
         row = 1;
         for i = equations;
-          [mons, degs] = GenerateMonomials(todeg - degsold(i), unknown, ordering);
-          idx = find(Mold(i, :));
-          for j = 1:length(mons)
-            for k = 1:length(idx)
-              monnew = alldegsold(idx(k), :) + degs(j, :);
-              order = GetMonomialOrder(monnew, unknown);
-              M(row, cols - (order - 1)) =  Mold(i, idx(k));
-              if nextElim == 1
-                Mcoefs(row, cols - (order - 1)) = size(Mold, 1)*(idx(k) - 1) + i;
-              else
-                Mcoefs(row, cols - (order - 1)) = MoldCoefs(i, idx(k));
+          if degsold(i) < todeg
+            [mons, degs] = GenerateMonomials(todeg - degsold(i), unknown, ordering);
+            idx = find(Mold(i, :));
+            for j = 1:length(mons)
+              for k = 1:length(idx)
+                monnew = alldegsold(idx(k), :) + degs(j, :);
+                order = GetMonomialOrder(monnew, unknown);
+                M(row, cols - (order - 1)) =  Mold(i, idx(k));
+                if (nextElim == 1) && (iteration ~= 1)
+                  Mcoefs(row, cols - (order - 1)) = size(Mold, 1)*(idx(k) - 1) + i;
+                else
+                  Mcoefs(row, cols - (order - 1)) = MoldCoefs(i, idx(k));
+                end
               end
+              row = row + 1;
             end
-            row = row + 1;
           end
         end
         
@@ -268,11 +279,12 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
           trace{iteration}.rowsold = rowsold;
         end
         
+        todeg = todeg + 1;
+        
         if var ~= 0
           break;
         end;
         
-        todeg = todeg + 1;
         if nextElim ~= -1
           nextElim = nextElim + 1;
         end
@@ -333,19 +345,35 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
         MGJ(:, nonzero) = B;
       end
       
-      
-      fprintf('    GJ elimination performed\n');
-      
+      fprintf('    GJ elimination performed on matrix with size %dx%d\n', size(M, 1), cols);
+
+      equationsAdded = size(find(sum(MGJ, 2) ~= 0), 1);
+      if equationsAddedOld >= equationsAdded
+        %revert back to previous iteration and leave todeg increased
+        iteration = iteration - 1;
+        Mcoefs = trace{iteration}.Mcoefs;
+        MGJ = trace{iteration}.MGJ;
+        discard = 1;
+      else
+        %try to add new equations up to total degree todeg
+        todeg = todegOld;
+        discard = 0;
+      end
+      equationsAddedOld = equationsAdded;
+
       equations = find(sum(MGJ, 2) ~= 0)';
       
       % save trace
-      trace{iteration}.Mcoefs = Mcoefs;
-      trace{iteration}.nonzerocols = nonzero;
-      if iteration > 1
-        trace{iteration}.rowfrom = size(Mcoefs, 1) - trace{iteration}.rowsold + 1;
-        trace{iteration}.rowto = size(Mcoefs, 1);
-        trace{iteration}.columnfrom = size(Mcoefs, 2) - size(trace{iteration - 1}.Mcoefs, 2) + 1;
-        trace{iteration}.columnto = size(Mcoefs, 2);
+      if (discard == 0) || (var ~= 0)
+        trace{iteration}.Mcoefs = Mcoefs;
+        trace{iteration}.MGJ = MGJ;
+        trace{iteration}.nonzerocols = nonzero;
+        if iteration > 1
+          trace{iteration}.rowfrom = size(Mcoefs, 1) - trace{iteration}.rowsold + 1;
+          trace{iteration}.rowto = size(Mcoefs, 1);
+          trace{iteration}.columnfrom = size(Mcoefs, 2) - size(trace{iteration - 1}.Mcoefs, 2) + 1;
+          trace{iteration}.columnto = size(Mcoefs, 2);
+        end
       end
       
       iteration = iteration + 1;
@@ -391,7 +419,7 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
         if step == 1
           up = up + 1;
         else
-          step = max([floor(step / 4) 1]);
+          step = max([floor(step/4) 1]);
         end
         filter = filterOld;
       end

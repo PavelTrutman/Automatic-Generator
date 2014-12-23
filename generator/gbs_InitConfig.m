@@ -11,7 +11,7 @@ function [cfg] = gbs_InitConfig()
     % prime field generator
     cfg.prime = 30097;
 
-    % how much will be the degrees of the polynoms enlarged before performing GJ elimination
+    % the total degree of the polynomials, we are generating polynomials up to, is inceased by GJstep after each GJ elimination
     % 0 means perform only one GJ elimination at the end
     cfg.GJstep = 0;
     
