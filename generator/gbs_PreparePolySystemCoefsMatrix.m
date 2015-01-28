@@ -2,7 +2,7 @@
 % variable "actMvar" (detect actMvar if variable was not specified)
 % (GBsolver subroutine)
 % by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, December 2014
+% last edit by Pavel Trutman, January 2015
 
 
 function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_PreparePolySystemCoefsMatrix(cfg, eq, known, unknown, algB, amVar)
@@ -193,7 +193,7 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
     end
     
     first = true;
-    equationsAddedOld = length(p);
+    equationsAddedOld = 0;
     
     % generate polynomials
     while var == 0
