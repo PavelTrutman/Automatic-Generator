@@ -1,10 +1,10 @@
 % Generate Matlab Code for given action matrix and coefficient matrices
 % (GBsolver subroutine)
 % by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, oct 2014
+% last edit by Pavel Trutman, February 2015
 
 
-function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx)
+function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, PaToH)
 
     [p, probname, e] = fileparts(filename);
     if isempty(e)
@@ -93,7 +93,13 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
    
     % elimination part
     if length(trace) == 1
-      fprintf(fid, '\tM = rref(M);\n');
+      %last elimination
+      if PaToH.enable
+        %use PaToH
+        fprintf(fid, '\tM = PaToH_rref(M);\n');
+      else
+        fprintf(fid, '\tM = rref(M);\n');
+      end
     else
       fprintf(fid, ['\tM = rref(M(:, [' l2s(trace{1}.nonzerocols, ' ') ']));\n']);
     end
@@ -115,7 +121,13 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
         fprintf(fid, ['\tM(' int2str(j) ') = Mold(' int2str(trace{i}.Mcoefs(j)) ');\n']);
       end
       if i == length(trace)
-        fprintf(fid, '\n\tM = rref(M);\n\n');  
+        %last elimination
+        if PaToH.enable
+          %use PaToH
+          fprintf(fid, '\n\tM = PaToH_rref(M);\n\n');
+        else
+          fprintf(fid, '\n\tM = rref(M);\n\n');
+        end
       else
         fprintf(fid, ['\n\tM = rref(M(:, [' l2s(trace{i}.nonzerocols, ' ') ']));\n\n']);
       end
@@ -136,7 +148,7 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
 
     % solution extraction
     
-	fprintf(fid, '\t[V D] = eig(A);\n');
+	  fprintf(fid, '\t[V D] = eig(A);\n');
     
     [oneidx, unksidx] = gbs_GetVariablesIdx(algB, unknown);
     varsinvec = find(unksidx > 0);
@@ -144,7 +156,7 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
     fprintf(fid, ['\tsol =  V([' l2s(unksidx(varsinvec), ', ') '],:)./(ones(' int2str(length(varsinvec)) ', ' int2str(oneidx) ')*V(' int2str(oneidx) ',:));\n']);
     fprintf(fid, '\n');
 
-	fprintf(fid, '\tif (find(isnan(sol(:))) > 0)\n\t\t\n');
+  	fprintf(fid, '\tif (find(isnan(sol(:))) > 0)\n\t\t\n');
 
     % division by zero filter
     ucnt = length(unknown);
@@ -192,5 +204,64 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
     
     fprintf(fid, '\tend\n');
     fprintf(fid, 'end\n');
+    
+    
+    %PaToH elimination function
+    if PaToH.enable
+      fprintf(fid, '\nfunction [res] = PaToH_rref(matrix)\n\n');
+      
+      %first part of matrix
+      mat1Cols = [PaToH.noAmCols(:, [PaToH.ACols1; PaToH.BCols]) PaToH.amCols];
+      fprintf(fid, ['\tmat1 = matrix([', l2s(PaToH.PRows1, ' '), '], [', l2s(mat1Cols, ' '), ']);\n']);
+      fprintf(fid, '\tmat1 = rref(mat1);\n');
+      
+      %second part of matrix
+      mat2Cols = [PaToH.noAmCols(:, [PaToH.ACols2; PaToH.BCols]) PaToH.amCols];
+      fprintf(fid, ['\tmat2 = matrix([', l2s(PaToH.PRows2, ' '), '], [', l2s(mat2Cols, ' '), ']);\n']);
+      fprintf(fid, '\tmat2 = rref(mat2);\n\n');
+      
+      %assemble both parts together
+      fprintf(fid, ['\tres = zeros([', l2s(size(trace{end}.Mcoefs), ' '), ']);\n']);
+      if size(PaToH.mat1TopRows, 2) ~= 0
+        fprintf(fid, ['\tres([', l2s(PaToH.resMat1TopRows, ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s(PaToH.mat1TopRows, ' '), '], :);\n']);
+      end
+      if size(PaToH.mat2TopRows, 2) ~= 0
+        fprintf(fid, ['\tres([', l2s(PaToH.resMat2TopRows, ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s(PaToH.mat2TopRows, ' '), '], :);\n']);
+      end
+      if size(PaToH.mat1BottRows, 2) ~= 0
+        fprintf(fid, ['\tres([', l2s(PaToH.resMat1BottRows, ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s(PaToH.mat1BottRows, ' '), '], :);\n']);
+      end
+      if size(PaToH.mat2BottRows, 2) ~= 0
+        fprintf(fid, ['\tres([', l2s(PaToH.resMat2BottRows, ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s(PaToH.mat2BottRows, ' '), '], :);\n']);
+      end
+      
+      %eliminate bottom rows of the matrix
+      if size(PaToH.bottomRows, 2) ~= 0
+        fprintf(fid, ['\tres([', l2s(PaToH.bottomRows, ' '), '], [', l2s(PaToH.resBottNonzeroCols, ' '), ']) = rref(res([', l2s(PaToH.bottomRows, ' '), '], [', l2s(PaToH.resBottNonzeroCols, ' '), ']));\n']);
+      end
+      
+      fprintf(fid, '\n');
+      
+      %eliminate amrows
+      elimRows = amrows(amrows > 0);
+      elimRows = setdiff(elimRows, PaToH.bottomRows);
+      for col = PaToH.BCols'
+        [pivotRow, ~] = find(PaToH.res(PaToH.bottomRows, col) == 1);
+        if size(pivotRow, 1) ~= 0
+          pivotRow = PaToH.bottomRows(pivotRow);
+          for row = elimRows'
+            if row > 0    
+              if PaToH.res(row, col) ~= 0
+                fprintf(fid, ['\tres(', int2str(row), ', :) = res(', int2str(row), ', :) - res(', int2str(row), ', ', int2str(col), ')*res(', int2str(pivotRow), ', :);\n']);
+              end
+            end
+          end
+        end
+      end
+      
+      fprintf(fid, 'end\n');
+    end
+    
+    
     fclose(fid);
 end

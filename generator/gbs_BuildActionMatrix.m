@@ -1,10 +1,10 @@
 % Build action natrix for variable "actMvar" given coefficient matrix M
 % (GBsolver subroutine)
 % by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, oct 2014
+% last edit by Pavel Trutman, February 2015
 
 
-function [amrows, amcols, gjcols, aidx] = gbs_BuildActionMatrix(cfg, M, algB, amLT, amLTall, algBidx, actMvar)
+function [amrows, amcols, gjcols, aidx, PartitioningWorkflow] = gbs_BuildActionMatrix(cfg, M, algB, amLT, amLTall, algBidx, actMvar)
 
     % extract action matrix for variable "actMvar"
     
@@ -19,7 +19,7 @@ function [amrows, amcols, gjcols, aidx] = gbs_BuildActionMatrix(cfg, M, algB, am
     B = gjzpsp(Kk, cfg.prime);
     A = zeros(size(M));
     A(:, nonzero) = B;
-
+    
     %
     % detect leading '1'
     [val, idx] = min(abs(B' - 1));
@@ -33,10 +33,19 @@ function [amrows, amcols, gjcols, aidx] = gbs_BuildActionMatrix(cfg, M, algB, am
     % create monomials lookup table
     aidx = (-1)*ones(1,cols);
     aidx(gjcols) = 1:size(gjcols, 2);
-
+    
     fprintf('Extracting the action matrix for variable ''%s'' (used coef. matrix size %dx%d) \n', char(actMvar), size(Kk, 1), length(gjcols));
     
     amcols = aidx((cols+1)-algBidx);
+    
+    if cfg.useMatrixPart
+      %use matrix partitioning
+      [B, PartitioningWorkflow] = gbs_MatrixPartitioning(M(:, gjcols), amcols, cfg.prime);
+      A = zeros(size(M));
+      A(:, gjcols) = B;
+    else
+      PartitioningWorkflow.enable = 0;
+    end
     
     for i=1:algBcnt
 

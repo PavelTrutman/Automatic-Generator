@@ -2,7 +2,7 @@
 % (GBsolver subroutine)
 %
 % by Martin Bujnak, mar 2008
-% last edit by Pavel Trutman, oct 2014
+% last edit by Pavel Trutman, February 2015
 
 function [cfg] = gbs_InitConfig()
 
@@ -47,8 +47,11 @@ function [cfg] = gbs_InitConfig()
     % cfg.ZpGeneratorMaxNumber = 55;             
     
     % polynomial removing step
-    cfg.bdoReduce = true;
-    cfg.bIncremental = false; 
+    %cfg.bdoReduce = true;
+    %cfg.bIncremental = false;
+    
+    %use matrix partitioning (by PaToH)
+    cfg.useMatrixPart = 0;
     
     % crash recovery from a log file. 
     % copy&paste matlab console output to a log file and run solver again

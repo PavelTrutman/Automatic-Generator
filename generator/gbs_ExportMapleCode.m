@@ -1,10 +1,10 @@
 % Generate Matlab Code for given action matrix and coefficient matrices
 % (GBsolver subroutine)
 % by Martin Bujnak, sep2008
-% last edit by Pavel Trutman, oct 2014
+% last edit by Pavel Trutman, February 2015
 
 
-function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx)
+function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, PaToH)
 
     [p, probname, e] = fileparts(filename);
     if isempty(e)

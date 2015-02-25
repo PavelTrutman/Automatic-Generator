@@ -8,7 +8,7 @@
 %
 %
 % by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, oct 2014
+% last edit by Pavel Trutman, February 2015
 
 function [res, export] = gbs_CreateCode(codename, eq, known, unknown, kngroups, cfg, algB)
 
@@ -35,7 +35,7 @@ function [res, export] = gbs_CreateCode(codename, eq, known, unknown, kngroups, 
     if ~isempty(M)
         
         % prepare code lookups
-        [amrows, amcols, gjcols, aidx] = gbs_BuildActionMatrix(cfg, M, algB, amLT, amLTall, algBidx, amVar);
+        [amrows, amcols, gjcols, aidx, PaToHWorkflow] = gbs_BuildActionMatrix(cfg, M, algB, amLT, amLTall, algBidx, amVar);
 
         % save calculated data
         export.M = M;
@@ -67,23 +67,23 @@ function [res, export] = gbs_CreateCode(codename, eq, known, unknown, kngroups, 
             
             if strcmpi(tmp{1}, 'matlab')
 
-                fprintf('--- generating matlab solver ---\n');
-                gbs_ExportMCode(['out\' codename suffix], M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx);
+                fprintf('--- generating MATLAB solver ---\n');
+                gbs_ExportMCode(['./out/' codename suffix], M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow);
 
             elseif strcmpi(tmp{1}, 'maple')
                 fprintf('--- generating Maple solver ---\n');
                 if isempty(suffix)
                     suffix = '.txt';
                 end
-                gbs_ExportMapleCode(['out\' codename suffix], M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx);
+                gbs_ExportMapleCode(['./out/' codename suffix], M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow);
             else
                 try
                     fprintf('--- generating c solver using '' %s '' template---\n', tmp{1});
                     if isempty(suffix)
                         suffix = 'mex.c';
                     end
-                    % warning: this function is not implemented in this backage
-                    gbs_ExportCCode(['out\' codename suffix], tmp{1}, M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx);
+                    % warning: this function is not implemented in this package
+                    gbs_ExportCCode(['out\' codename suffix], tmp{1}, M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow);
                 catch
                     fprintf('... error exporting using ''%s'' template---\n', tmp{1});
                 end
