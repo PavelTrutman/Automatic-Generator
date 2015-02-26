@@ -38,9 +38,9 @@ function [amrows, amcols, gjcols, aidx, PartitioningWorkflow] = gbs_BuildActionM
     
     amcols = aidx((cols+1)-algBidx);
     
-    if cfg.useMatrixPart
+    if strcmp(cfg.matrixPartitioning, 'all') || strcmp(cfg.matrixPartitioning, 'last')
       %use matrix partitioning
-      [B, PartitioningWorkflow] = gbs_MatrixPartitioning(M(:, gjcols), amcols, cfg.prime);
+      [B, PartitioningWorkflow] = gbs_MatrixPartitioning(M(:, gjcols), amcols, false, cfg.prime);
       A = zeros(size(M));
       A(:, gjcols) = B;
     else

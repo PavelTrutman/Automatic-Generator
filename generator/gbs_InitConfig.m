@@ -51,7 +51,11 @@ function [cfg] = gbs_InitConfig()
     %cfg.bIncremental = false;
     
     %use matrix partitioning (by PaToH)
-    cfg.useMatrixPart = 0;
+    %possileble values
+    %  'none' - no matrix partitioning would be used
+    %  'last' - only the last elimination would be done by using partitioning
+    %  'all'  - for all eliminations would be used partitioning
+    cfg.matrixPartitioning = 'none';
     
     % crash recovery from a log file. 
     % copy&paste matlab console output to a log file and run solver again

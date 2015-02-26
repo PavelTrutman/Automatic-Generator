@@ -1,7 +1,7 @@
 % GJ elimination with PaToH partitioning
 % Pavel Trutman, pavel.trutman@fel.cvut.cz, February 2015
 
-function [res, workflow] = myPaToHNew(matrix, amCols, prime)
+function [res, workflow] = gbs_MatrixPartitioning(matrix, amCols, eliminateCompletly, prime)
 
   %separete algB collumns
   amCols = sort(amCols);
@@ -10,7 +10,11 @@ function [res, workflow] = myPaToHNew(matrix, amCols, prime)
   redMatrix = matrix(:, noAmCols);
   
   %use PaToH to patition the matrix
-  [P, PRows, PCols] = PaToHMatrixPart(redMatrix, 2, 'RWS');
+  if eliminateCompletly
+    [P, PRows, PCols] = PaToHMatrixPart(redMatrix, 2, 'RWU');
+  else
+    [P, PRows, PCols] = PaToHMatrixPart(redMatrix, 2, 'RWS');
+  end
   
   %extract rows and cols for each part
   [PRows1, ~] = find(PRows == 1);
@@ -31,7 +35,14 @@ function [res, workflow] = myPaToHNew(matrix, amCols, prime)
   mat1 = [redMatrix(PRows1, [ACols1; BCols]), matrix(PRows1, amCols)];
   mat1 = gjzpsp(mat1, prime);
   if size(ACols1, 1) ~= 0
-    [lastRow1, ~] = find(mat1(:, size(ACols1, 1)), 1, 'last');
+    [lastRow1, ~] = find(sum(mat1(:, 1:size(ACols1, 1)), 2), 1, 'last');
+    if size(lastRow1, 1) == 0
+      lastRow1 = 0;
+    end
+    %[rows, cols] = find(mat1(:, 1:size(ACols1, 1)));
+    %[mat1PivotRows, indexCol, ~] = unique(rows, 'sorted');
+    %cols = cols(indexCol);
+    %mat1PivotCols = ACols1(cols);
   else
     lastRow1 = 0;
   end
@@ -40,7 +51,14 @@ function [res, workflow] = myPaToHNew(matrix, amCols, prime)
   mat2 = [redMatrix(PRows2, [ACols2; BCols]), matrix(PRows2, amCols)];
   mat2 = gjzpsp(mat2, prime);
   if size(ACols2, 1) ~= 0
-    [lastRow2, ~] = find(mat2(:, size(ACols2, 1)), 1, 'last');
+    [lastRow2, ~] = find(sum(mat2(:, 1:size(ACols2, 1)), 2), 1, 'last');
+    if size(lastRow2, 1) == 0
+      lastRow2 = 0;
+    end
+    %[rows, cols] = find(mat2(:, 1:size(ACols2, 1)));
+    %[mat2PivotRows, indexCol, ~] = unique(rows, 'sorted');
+    %cols = cols(indexCol);
+    %mat2PivotCols = ACols2(cols);
   else
     lastRow2 = 0;
   end
@@ -67,6 +85,69 @@ function [res, workflow] = myPaToHNew(matrix, amCols, prime)
   %again eliminate the bottom part
   nonzero = find(sum(res(bottomRows, :), 1) ~= 0);
   res(bottomRows, nonzero) = gjzpsp(res(bottomRows, nonzero), prime);
+  
+  [rows, cols] = find(res == 1);
+  [resPivotRows, indexCol, ~] = unique(rows, 'sorted');
+  resPivotCols = cols(indexCol);
+  [~, resPermutationRows] = sort(resPivotCols);
+  resPermutationRows = resPivotRows(resPermutationRows);
+  [~, resPermutationRows] = sort(resPermutationRows);
+  res(resPermutationRows, :) = res;
+  
+  if eliminateCompletly
+    elimCols = BCols;
+    while size(elimCols, 1) ~= 0
+      col = elimCols(1);
+      elimCols = setdiff(elimCols, col);
+      %pivotRow = resPermutationRows(resPivotRows(resPivotCols == col));
+      if sum(res(:, col)) ~= 0
+        
+        if col ~= 1
+          pivotRow = find(sum(res(:, 1:col-1), 2), 1, 'last') + 1;
+          if size(pivotRow, 2) == 0
+            pivotRow = 1;
+          end
+        else
+          pivotRow = 1;
+        end
+        
+        if pivotRow > size(res, 1)
+          break;
+        end
+        if res(pivotRow, col) == 0
+          if sum(res(pivotRow:end, col)) ~= 0
+            switchRow = find(res(pivotRow:end, col), 1, 'first') + pivotRow - 1;
+            tmpRow = res(pivotRow, :);
+            res(pivotRow, :) = res(switchRow, :);
+            res(switchRow, :) = tmpRow;
+            
+            addElimCols = find(res(switchRow, :));
+            elimCols = unique([elimCols; addElimCols(addElimCols > col)'], 'sorted');
+          else
+            continue;
+          end
+          
+        end
+        
+        addElimCols = find(res(pivotRow, :));
+        elimCols = unique([elimCols; addElimCols(addElimCols > col)'], 'sorted');
+        
+        if res(pivotRow, col) ~= 1
+          [~, c] = gcd(res(pivotRow, col), -prime);
+          res(pivotRow, :) = mod(c*res(pivotRow, :), prime);
+        end
+        
+        for row = setdiff(1:size(res, 1), pivotRow)
+          if res(row, col) ~= 0
+            res(row, :) = mod(res(row, :) - res(row, col)*res(pivotRow, :), prime);
+          end
+        end
+      end
+      if pivotRow == size(res, 1)
+        break;
+      end
+    end
+  end
   
   %save workflow
   workflow.enable = 1;

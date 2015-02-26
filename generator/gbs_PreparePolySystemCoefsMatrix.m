@@ -363,6 +363,11 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
 
       equations = find(sum(MGJ, 2) ~= 0)';
       
+      %matrix partitioning for elimination
+      if strcmp(cfg.matrixPartitioning, 'all')
+        [MGJPart, partitioningWorkflow] = gbs_MatrixPartitioning(M, [], true, cfg.prime);
+      end
+      
       % save trace
       if (discard == 0) || (var ~= 0)
         trace{iteration}.Mcoefs = Mcoefs;
