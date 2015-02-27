@@ -33,32 +33,26 @@ function [res, workflow] = gbs_MatrixPartitioning(matrix, amCols, eliminateCompl
   
   %elimination of the first matrix
   mat1 = [redMatrix(PRows1, [ACols1; BCols]), matrix(PRows1, amCols)];
-  mat1 = gjzpsp(mat1, prime);
+  mat1NonzeroCols = find(sum(mat1, 1) ~= 0);
+  mat1(:, mat1NonzeroCols) = gjzpsp(mat1(:, mat1NonzeroCols), prime);
   if size(ACols1, 1) ~= 0
     [lastRow1, ~] = find(sum(mat1(:, 1:size(ACols1, 1)), 2), 1, 'last');
     if size(lastRow1, 1) == 0
       lastRow1 = 0;
     end
-    %[rows, cols] = find(mat1(:, 1:size(ACols1, 1)));
-    %[mat1PivotRows, indexCol, ~] = unique(rows, 'sorted');
-    %cols = cols(indexCol);
-    %mat1PivotCols = ACols1(cols);
   else
     lastRow1 = 0;
   end
   
   %elimination of the second matrix
   mat2 = [redMatrix(PRows2, [ACols2; BCols]), matrix(PRows2, amCols)];
-  mat2 = gjzpsp(mat2, prime);
+  mat2NonzeroCols = find(sum(mat2, 1) ~= 0);
+  mat2(:, mat2NonzeroCols) = gjzpsp(mat2(:, mat2NonzeroCols), prime);
   if size(ACols2, 1) ~= 0
     [lastRow2, ~] = find(sum(mat2(:, 1:size(ACols2, 1)), 2), 1, 'last');
     if size(lastRow2, 1) == 0
       lastRow2 = 0;
     end
-    %[rows, cols] = find(mat2(:, 1:size(ACols2, 1)));
-    %[mat2PivotRows, indexCol, ~] = unique(rows, 'sorted');
-    %cols = cols(indexCol);
-    %mat2PivotCols = ACols2(cols);
   else
     lastRow2 = 0;
   end
@@ -86,22 +80,25 @@ function [res, workflow] = gbs_MatrixPartitioning(matrix, amCols, eliminateCompl
   nonzero = find(sum(res(bottomRows, :), 1) ~= 0);
   res(bottomRows, nonzero) = gjzpsp(res(bottomRows, nonzero), prime);
   
-  [rows, cols] = find(res == 1);
-  [resPivotRows, indexCol, ~] = unique(rows, 'sorted');
-  resPivotCols = cols(indexCol);
-  [~, resPermutationRows] = sort(resPivotCols);
-  resPermutationRows = resPivotRows(resPermutationRows);
-  [~, resPermutationRows] = sort(resPermutationRows);
-  res(resPermutationRows, :) = res;
-  
   if eliminateCompletly
+    %reorder rows to get identity matrix
+    [rows, cols] = find(res == 1);
+    [resPivotRows, indexCol, ~] = unique(rows, 'sorted');
+    resPivotCols = cols(indexCol);
+    [~, resPermutationRows] = sort(resPivotCols);
+    resPermutationRows = resPivotRows(resPermutationRows);
+    [~, resPermutationRows] = sort(resPermutationRows);
+    res(resPermutationRows, :) = res;
+  
+    %eliminate rest
     elimCols = BCols;
+    i = 1;
     while size(elimCols, 1) ~= 0
       col = elimCols(1);
       elimCols = setdiff(elimCols, col);
-      %pivotRow = resPermutationRows(resPivotRows(resPivotCols == col));
       if sum(res(:, col)) ~= 0
         
+        %find pivotRow
         if col ~= 1
           pivotRow = find(sum(res(:, 1:col-1), 2), 1, 'last') + 1;
           if size(pivotRow, 2) == 0
@@ -114,16 +111,23 @@ function [res, workflow] = gbs_MatrixPartitioning(matrix, amCols, eliminateCompl
         if pivotRow > size(res, 1)
           break;
         end
+        
+        
         if res(pivotRow, col) == 0
+          %switch rows if zero in pivotRow
           if sum(res(pivotRow:end, col)) ~= 0
             switchRow = find(res(pivotRow:end, col), 1, 'first') + pivotRow - 1;
             tmpRow = res(pivotRow, :);
             res(pivotRow, :) = res(switchRow, :);
             res(switchRow, :) = tmpRow;
+            workflow.elim{i}.type = 'switch';
+            workflow.elim{i}.rows = [pivotRow, switchRow];
+            i = i + 1;
             
             addElimCols = find(res(switchRow, :));
             elimCols = unique([elimCols; addElimCols(addElimCols > col)'], 'sorted');
           else
+            %continue with next col if zeros below pivotRow
             continue;
           end
           
@@ -133,20 +137,35 @@ function [res, workflow] = gbs_MatrixPartitioning(matrix, amCols, eliminateCompl
         elimCols = unique([elimCols; addElimCols(addElimCols > col)'], 'sorted');
         
         if res(pivotRow, col) ~= 1
+          %divide to get one
           [~, c] = gcd(res(pivotRow, col), -prime);
           res(pivotRow, :) = mod(c*res(pivotRow, :), prime);
+          workflow.elim{i}.type = 'divide';
+          workflow.elim{i}.row = pivotRow;
+          workflow.elim{i}.col = col;
+          i = i + 1;
         end
         
+        %eliminate the column
         for row = setdiff(1:size(res, 1), pivotRow)
           if res(row, col) ~= 0
             res(row, :) = mod(res(row, :) - res(row, col)*res(pivotRow, :), prime);
+            workflow.elim{i}.type = 'eliminate';
+            workflow.elim{i}.row = row;
+            workflow.elim{i}.col = col;
+            workflow.elim{i}.pivotRow = pivotRow;
+            i = i + 1;
           end
         end
       end
       if pivotRow == size(res, 1)
+        %break if bottom reached
         break;
       end
     end
+    
+    workflow.permutationRows = resPermutationRows;
+    
   end
   
   %save workflow
@@ -180,5 +199,7 @@ function [res, workflow] = gbs_MatrixPartitioning(matrix, amCols, eliminateCompl
   workflow.topRows = topRows;
   workflow.bottomRows = bottomRows;
   workflow.resBottNonzeroCols = nonzero;
+  workflow.mat1NonzeroCols = mat1NonzeroCols;
+  workflow.mat2NonzeroCols = mat2NonzeroCols;
   
 end

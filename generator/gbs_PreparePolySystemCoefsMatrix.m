@@ -365,7 +365,10 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
       
       %matrix partitioning for elimination
       if strcmp(cfg.matrixPartitioning, 'all')
-        [MGJPart, partitioningWorkflow] = gbs_MatrixPartitioning(M, [], true, cfg.prime);
+        [~, partitioning] = gbs_MatrixPartitioning(M, [], true, cfg.prime);
+        partitioning.enable = 1;
+      else
+        partitioning.enable = 0;
       end
       
       % save trace
@@ -373,6 +376,7 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
         trace{iteration}.Mcoefs = Mcoefs;
         trace{iteration}.MGJ = MGJ;
         trace{iteration}.nonzerocols = nonzero;
+        trace{iteration}.partitioning = partitioning;
         if iteration > 1
           trace{iteration}.rowfrom = size(Mcoefs, 1) - trace{iteration}.rowsold + 1;
           trace{iteration}.rowto = size(Mcoefs, 1);
