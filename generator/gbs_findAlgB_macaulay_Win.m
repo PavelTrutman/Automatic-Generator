@@ -2,15 +2,16 @@
 % (GBsolver subroutine)
 %
 % by Martin Bujnak, mar 2008
+% last edit by Pavel Trutman, February 2015
 
-function [algB res] = gbs_findAlgB_macaulay(cfg, eq, known, unknown)
+function [algB, res] = gbs_findAlgB_macaulay_Win(cfg, eq, known, unknown)
 
     algB = [];
     res = 0;
     
     mcExecCode = 'gbsMacaulay\calc.bat';
-    mcCode = 'gbsMacaulay\code.m2';
-    mcCodeTemplate = 'gbsMacaulay\code_template.m2';
+    mcCode = 'gbsMacaulay/code.m2';
+    mcCodeTemplate = 'gbsMacaulay/code_template.m2';
 
     fprintf('calculating Grobner basis using Macaulay2 \n');
 
@@ -48,7 +49,7 @@ function [algB res] = gbs_findAlgB_macaulay(cfg, eq, known, unknown)
     mcideal = [mcideal ' );'];
     
     
-    % prepare macaylay code
+    % prepare macaulay code
     
     repm = [{'$PRIME$'} {int2str(cfg.prime)}];
     repm = [repm; {'$UNKCNT$'} {int2str(unkcnt)} ];
@@ -64,6 +65,7 @@ function [algB res] = gbs_findAlgB_macaulay(cfg, eq, known, unknown)
         
         templ = strrep(templ, re{1}, re{2});
     end
+    templ = strrep(templ, 'gbTrace = 3;', 'gbTrace 3;');
     
     fprintf(fid, templ);
     fclose(fid);    

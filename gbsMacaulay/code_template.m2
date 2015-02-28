@@ -13,7 +13,7 @@ $EQUATIONSVEC$
 -- generated part end
 
 I1 = ideal(f); 
-gbTrace 3;
+gbTrace = 3;
 dm = dim I1;
 dg = degree I1;
 

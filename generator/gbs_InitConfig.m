@@ -25,11 +25,11 @@ function [cfg] = gbs_InitConfig()
     % any function of the form 
     %     "[algB res] = GBSolver(cfg, eq, known, unknown);"
     
-    % maple solver
-    cfg.GBSolver = @gbs_findAlgB_maple;         
+    % Macaulay2 gb solver for Windows
+    cfg.GBSolver = @gbs_findAlgB_macaulay_Win;         
     
-    % Macaulay2 gb solver
-    cfg.GBSolver = @gbs_findAlgB_macaulay;      
+    % Macaulay2 gb solver for Linux
+    cfg.GBSolver = @gbs_findAlgB_macaulay_Linux;      
     
     % instance generators
     % any function of the form 
