@@ -51,7 +51,8 @@ function [cfg] = gbs_InitConfig()
     %cfg.bIncremental = false;
     
     %use matrix partitioning (by PaToH)
-    %possileble values
+    %how to set up this external library see the 'installation.txt', this library is not available for Windows
+    %possible values
     %  'none' - no matrix partitioning would be used
     %  'last' - only the last elimination would be done by using partitioning
     %  'all'  - for all eliminations would be used partitioning
