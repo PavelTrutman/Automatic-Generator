@@ -1,5 +1,5 @@
 % Perform modulus on coefficients of given equation
-% Pavel Trutman, trutmpav@fel.cvut.cz, aug2014
+% Pavel Trutman, pavel.trutman@fel.cvut.cz, August 2014
 %
 % [eq] = EquationModulus(eq, unknown, prime)
 % Extracts coefficients of equation, perform modulus by prime and restore 

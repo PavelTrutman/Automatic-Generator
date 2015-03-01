@@ -2,7 +2,7 @@
 % (GBsolver subroutine)
 %
 % by Martin Bujnak, mar 2008
-% last edit by Pavel Trutman, oct 2014
+% last edit by Pavel Trutman, February 2015
 
 function [cfg] = gbs_InitConfig()
 
@@ -25,11 +25,11 @@ function [cfg] = gbs_InitConfig()
     % any function of the form 
     %     "[algB res] = GBSolver(cfg, eq, known, unknown);"
     
-    % maple solver
-    cfg.GBSolver = @gbs_findAlgB_maple;         
-    
     % Macaulay2 gb solver
-    cfg.GBSolver = @gbs_findAlgB_macaulay;      
+    cfg.GBSolver = @gbs_findAlgB_macaulay;         
+    
+    % Maple gb solver
+    %cfg.GBSolver = @gbs_findAlgB_maple;
     
     % instance generators
     % any function of the form 
@@ -47,8 +47,16 @@ function [cfg] = gbs_InitConfig()
     % cfg.ZpGeneratorMaxNumber = 55;             
     
     % polynomial removing step
-    cfg.bdoReduce = true;
-    cfg.bIncremental = false; 
+    %cfg.bdoReduce = true;
+    %cfg.bIncremental = false;
+    
+    %use matrix partitioning (by PaToH)
+    %how to set up this external library see the 'installation.txt', this library is not available for Windows
+    %possible values
+    %  'none' - no matrix partitioning is used
+    %  'last' - only the last elimination is done by using partitioning
+    %  'all'  - for all eliminations is used partitioning
+    cfg.matrixPartitioning = 'none';
     
     % crash recovery from a log file. 
     % copy&paste matlab console output to a log file and run solver again
