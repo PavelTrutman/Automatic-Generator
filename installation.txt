@@ -9,13 +9,14 @@ Problem Solvers, ECCV 2008, Marseille, France, October 12-18, 2008
 
 Please refer to the license.txt for licensing details.
 
+
 MS Windows Installation
---------------------
+-----------------------
 
 This package does not require any installation. Package contains all 
-necessary modules. By default the solvers generator uses Maple to compute 
-Groebner basis (GB). We recommend to install Macaulay2 since it provides 
-better GB solver.
+necessary modules. By default the solvers generator uses Macaulay2 to 
+compute Groefner basis (GB). Or it is possible to use Maple toolbox to 
+compute GB.
 
 Please refer to "generator\gbs_InitConfig.m" for further generator 
 configuration. The file should be self explanatory enough.
@@ -27,15 +28,16 @@ Groebner basis solver
 We recommend to install Macaulay2 software package which provides fast and 
 stable Groebner basis solver. 
 Download it from "http://www.math.uiuc.edu/Macaulay2/" or install one 
-located in prerequisites directory ("macaulay2-0.9.2-3.msi"). 
+(for Windows) located in prerequisites directory ("macaulay2-0.9.2-3.msi"). 
 
-After installing the package, update all "!!TODO:" labeled items in 
-"gbsMacaulay\calc.bat". Please remove "!!TODO:" label and fill correct full
-paths to Macaulay2 installation directory according to example in "calc.bat".
+If you are using this package for Windows, update all "!!TODO:" labeled 
+items in "gbsMacaulay\calc.bat". Please remove "!!TODO:" label and fill 
+correct full paths to Macaulay2 installation directory according to 
+example in "calc.bat".
 
-Then, uncomment "% cfg.GBSolver = @gbs_findAlgB_macaulay;" line in 
-"generator\gbs_InitConfig.m". This will enable Macaulay Groebner basis 
-solver in the solvers generator.
+Then, check that "% cfg.GBSolver = @gbs_findAlgB_macaulay;" line in 
+"generator\gbs_InitConfig.m" is uncommented. This will enable Macaulay 
+Groebner basis solver in the solvers generator.
 
 
 Custom Groebner basis solver
@@ -50,6 +52,20 @@ equations, known and unknown variables. By default, the package contains
 "gbs_findAlgB_macaulay" and "gbs_findAlgB_maple" which are wrappers to 
 Macaulay2 and Maple Groebner basis solvers. However, you can implement your 
 own wrapper.
+
+
+Using matrix patitioning
+------------------------
+
+To enable matrix patitioning change variable "cfg.cfg.matrixPartitioning" 
+in config file "generator\gbs_InitConfig.m" according to description in 
+this file.
+
+This package uses tool PaToH to partition sparse matrices to speed up the 
+Gauss-Jordan eliminations. This tool is not available for Windows. To 
+download this tool see "http://bmi.osu.edu/~umit/software.html#patoh" or 
+use downloaded packages located in "prerequisites/PaToH/". For installation 
+see instructions enclosed in these packages.
 
 
 Limitations

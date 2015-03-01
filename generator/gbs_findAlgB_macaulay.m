@@ -4,14 +4,25 @@
 % by Martin Bujnak, mar 2008
 % last edit by Pavel Trutman, February 2015
 
-function [algB, res] = gbs_findAlgB_macaulay_Win(cfg, eq, known, unknown)
+function [algB, res] = gbs_findAlgB_macaulay(cfg, eq, known, unknown)
 
     algB = [];
     res = 0;
     
-    mcExecCode = 'gbsMacaulay\calc.bat';
+    %detect OS
+    if strcmp(computer('arch'), 'win32') || strcmp(computer('arch'), 'win64')
+      os = 'win';
+    elseif strcmp(computer('arch'), 'glnxa64')
+      os = 'unix';
+    end
+    
     mcCode = 'gbsMacaulay/code.m2';
     mcCodeTemplate = 'gbsMacaulay/code_template.m2';
+    if strcmp(os, 'win')
+      mcExecCode = 'gbsMacaulay\calc.bat';
+    elseif strcmp(os, 'unix')
+      mcExecCode = ['M2 ' mcCode];
+    end
 
     fprintf('calculating Grobner basis using Macaulay2 \n');
 
@@ -65,20 +76,23 @@ function [algB, res] = gbs_findAlgB_macaulay_Win(cfg, eq, known, unknown)
         
         templ = strrep(templ, re{1}, re{2});
     end
-    templ = strrep(templ, 'gbTrace = 3;', 'gbTrace 3;');
+    if strcmp(os, 'win')
+      templ = strrep(templ, 'gbTrace = 3;', 'gbTrace 3;');
+    end
     
     fprintf(fid, templ);
     fclose(fid);    
 
     % call macaulay
     
-    [res, val] = dos(mcExecCode);
+    [res, val] = system(mcExecCode);
 
     dimpos = strfind(val, 'dim:');
     degpos = strfind(val, 'deg:');
     if isempty(dimpos) || isempty(degpos)
 
         fprintf('Error executing Macaulay2. Check paths.\n');
+        fprintf([val '\n']);
         return;
     end
     

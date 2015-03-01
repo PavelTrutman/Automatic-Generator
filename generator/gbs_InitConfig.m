@@ -25,11 +25,11 @@ function [cfg] = gbs_InitConfig()
     % any function of the form 
     %     "[algB res] = GBSolver(cfg, eq, known, unknown);"
     
-    % Macaulay2 gb solver for Windows
-    cfg.GBSolver = @gbs_findAlgB_macaulay_Win;         
+    % Macaulay2 gb solver
+    cfg.GBSolver = @gbs_findAlgB_macaulay;         
     
-    % Macaulay2 gb solver for Linux
-    cfg.GBSolver = @gbs_findAlgB_macaulay_Linux;      
+    % Maple gb solver
+    %cfg.GBSolver = @gbs_findAlgB_maple;
     
     % instance generators
     % any function of the form 
@@ -53,9 +53,9 @@ function [cfg] = gbs_InitConfig()
     %use matrix partitioning (by PaToH)
     %how to set up this external library see the 'installation.txt', this library is not available for Windows
     %possible values
-    %  'none' - no matrix partitioning would be used
-    %  'last' - only the last elimination would be done by using partitioning
-    %  'all'  - for all eliminations would be used partitioning
+    %  'none' - no matrix partitioning is used
+    %  'last' - only the last elimination is done by using partitioning
+    %  'all'  - for all eliminations is used partitioning
     cfg.matrixPartitioning = 'none';
     
     % crash recovery from a log file. 
