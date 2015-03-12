@@ -1,3 +1,7 @@
+function [codename, eq, known, unknown, kngroups, cfg, algB] = ku8pt()
+
+codename = 'ku8pt';
+
 g1 = transpose(gbs_Vector('g1', 7));
 g2 = transpose(gbs_Vector('g2', 7));
 g3 = transpose(gbs_Vector('g3', 7));
@@ -34,5 +38,9 @@ known = {};
 for var = vars
   known = [known {char(var)}];
 end
-% call code generator
-[res export] = gbs_CreateCode('ku8pt', eq, known, unknown);
+
+kngroups = [];
+cfg = gbs_InitConfig();
+algB = [];
+
+end
