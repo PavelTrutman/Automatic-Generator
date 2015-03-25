@@ -1,7 +1,6 @@
-function [codename, eq, known, unknown, kngroups, cfg, algB] = rsp6p()
+function [eq, known, unknown, kngroups, cfg, algB] = rsp6p()
 
 % P6P rolling shutter (eliminated)
-codename = 'rsp6p';
 
 g1 = transpose(gbs_Vector('g1', 10));
 g2 = transpose(gbs_Vector('g2', 10));

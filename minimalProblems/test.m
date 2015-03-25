@@ -1,6 +1,4 @@
-function [codename, eq, known, unknown, kngroups, cfg, algB] = test()
-
-codename = 'test';
+function [eq, known, unknown, kngroups, cfg, algB] = test()
 
 % symbolic variables
 syms a0 a1 a2 a3 a4 b0 b1 b2 b3 b4;

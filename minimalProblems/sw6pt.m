@@ -1,8 +1,7 @@
-function [codename, eq, known, unknown, kngroups, cfg, algB] = sw6pt()
+function [eq, known, unknown, kngroups, cfg, algB] = sw6pt()
 %%
 % 6point focal length problem
 % http://cmp.felk.cvut.cz/minimal/6_pt_relative.php
-codename = 'sw6pt';
 
 %%
 setpaths;

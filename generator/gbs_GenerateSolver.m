@@ -3,7 +3,7 @@
 % 'minimalProblems'. 
 % 
 % Minimal problem is every function of the form 
-%   '[codename, eq, known, unknown, kngroups, cfg, algB] = nameOfMinimalProblem()'.
+%   '[eq, known, unknown, kngroups, cfg, algB] = nameOfMinimalProblem()'.
 % 
 % Pavel Trutman, pavel.trutman@fel.cvut.cz, March 2015
 % 
@@ -12,8 +12,11 @@
 
 function [res, export] = gbs_GenerateSolver(problemName)
   
+  % get minimal problem definition
   problem = str2func(problemName);
-  [codename, eq, known, unknown, kngroups, cfg, algB] = problem();
-  [res, export] = gbs_CreateCode(codename, eq, known, unknown, kngroups, cfg, algB);
+  [eq, known, unknown, kngroups, cfg, algB] = problem();
+  
+  %create code
+  [res, export] = gbs_CreateCode(problemName, eq, known, unknown, kngroups, cfg, algB);
 
 end

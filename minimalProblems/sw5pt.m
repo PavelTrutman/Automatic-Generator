@@ -1,8 +1,7 @@
-function [codename, eq, known, unknown, kngroups, cfg, algB] = sw5pt()
+function [eq, known, unknown, kngroups, cfg, algB] = sw5pt()
 %%
 % 5point relative pose problem
 % http://cmp.felk.cvut.cz/minimal/5_pt_relative.php
-codename = 'sw5pt';
 
 %%
 % register the generator
