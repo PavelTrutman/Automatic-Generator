@@ -4,7 +4,10 @@
 % last edit by Pavel Trutman, March 2015
 
 function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, algorithmCfg)
-
+  
+  global prime;
+  global maxorder;
+  
   prime = cfg.prime;
   Sel = algorithmCfg.Sel;
   
@@ -63,7 +66,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     end
     
     % reducto
-    [Ftplus{d}, F{d}] = Reduction(L{d}, G, F);
+    [Ftplus{d}, F{d}, Ft{d}] = Reduction(L{d}, G, F, Ft);
     
     % insert new pairs
     for i = 1:size(Ftplus{d}, 1)
@@ -72,6 +75,43 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     
     foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
     
+  end
+  
+end
+
+  
+  
+% Reduction F4
+  
+function [Ftplus, F, Ft] = Reduction(L, G, FAll, FtAll)
+   
+  global prime;
+  global maxorder;
+ 
+  F = SymbolicPreprocessing(L, G, FAll, FtAll);
+  Ft = gjzpsp(F, prime);
+  
+  % pick head monomials
+  HM = zeros(0, 1);
+  for i = 1:size(F, 1)
+    index = find(F(i, :), 1, 'first');
+    %order = size(F, 2) - index + 1;
+    if ~isempty(index)
+      HM = [HM; index];
+    end
+  end
+  
+  % pick rows with new head monomials
+  last = 0;
+  Ftplus = zeros(0, maxorder);
+  for i = 1:size(F, 1)
+    index =find(Ft(i, :), 1, 'first');
+    if ~isempty(index)
+      if sum(HM == index) == 0
+        last = last + 1;
+        Ftplus(last, :) = Ft(i, :);
+      end
+    end
   end
   
 end
