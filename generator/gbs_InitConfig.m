@@ -10,17 +10,11 @@ function [cfg] = gbs_InitConfig()
     
     % prime field generator
     cfg.prime = 30097;
-
-    % the total degree of the polynomials, we are generating polynomials up to, is inceased by GJstep after each GJ elimination
-    % 0 means perform only one GJ elimination at the end
-    cfg.GJstep = 0;
     
-    %
     % list of equations which should be used in Groebner basis solver (cfg.GBSolver).
     % e.g. set cfg.GBrestrictEq = 1:4; to use equations 1 to 4 only.
     cfg.GBrestrictEq = [];
 
-    %
     % groebner basis solver
     % any function of the form 
     %     "[algB res] = GBSolver(cfg, eq, known, unknown);"
@@ -50,12 +44,28 @@ function [cfg] = gbs_InitConfig()
     %cfg.bdoReduce = true;
     %cfg.bIncremental = false;
     
-    %use matrix partitioning (by PaToH)
-    %how to set up this external library see the 'installation.txt', this library is not available for Windows
-    %possible values
-    %  'none' - no matrix partitioning is used
-    %  'last' - only the last elimination is done by using partitioning
-    %  'all'  - for all eliminations is used partitioning
+    
+    % generator of polynomials
+    % generate polynomials to selected degree
+    %cfg.PolynomialsGenerator = @gbs_GeneratePolynomials_Primitive;
+    % config of this algorithm:
+      % the total degree of the polynomials, we are generating polynomials up to, is inceased by GJstep after each GJ elimination
+      % 0 means perform only one GJ elimination at the end
+      %cfg.PolynomialsGeneratorCfg.GJstep = 0;
+      
+    % use strategies from F4 algorithm
+    cfg.PolynomialsGenerator = @gbs_GeneratePolynomials_F4;
+    % config of this algorithm
+      % define selection strategy of the F4 algorithm
+      cfg.PolynomialsGeneratorCfg.Sel = @(P)deal(P(1:1,1),P(2:end,1));
+    
+    
+    % use matrix partitioning (by PaToH)
+    % how to set up this external library see the 'installation.txt', this library is not available for Windows
+    % possible values
+    %   'none' - no matrix partitioning is used
+    %   'last' - only the last elimination is done by using partitioning
+    %   'all'  - for all eliminations is used partitioning
     cfg.matrixPartitioning = 'none';
     
     % crash recovery from a log file. 

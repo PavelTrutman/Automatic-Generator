@@ -3,10 +3,10 @@
 % by Martin Bujnak, mar2008
 % last edit by Pavel Trutman, March 2015
 
-function [foundVar, M, trace] = gbs_GeneratePolynomials_Primitive(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg)
+function [foundVar, M, trace] = gbs_GeneratePolynomials_Primitive(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, algorithmCfg)
 
   prime = cfg.prime;
-  GJstep = cfg.GJstep;
+  GJstep = algorithmCfg.GJstep;
   ordering = cfg.ordering;
 
   % count rows
