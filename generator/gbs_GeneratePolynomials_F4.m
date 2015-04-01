@@ -7,11 +7,12 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   
   global prime;
   global maxorder;
+  global allDegs;
   
   prime = cfg.prime;
   Sel = algorithmCfg.Sel;
-  
   maxorder = length(allmons);
+  allDegs = alldegs;
   
   d = 0;
   G = zeros(0, maxorder);
@@ -42,10 +43,10 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
       right = true;
       % check duplicity of pairs
       for j = 1:length(L{d})
-        if(left && L{d}{j}.t == PSel{d}{i}.leftT && L{d}{j}.f == PSel{d}{j}.leftF)
+        if(left && L{d}{j}.monomial == PSel{d}{i}.left.monomial && L{d}{j}.polynomial == PSel{d}{j}.left.polynomial)
           left = false;
         end
-        if(right && L{d}{j}.t == PSel{d}{i}.rightT && L{d}{j}.f == PSel{d}{j}.rightF)
+        if(right && L{d}{j}.monomial == PSel{d}{i}.right.monomial && L{d}{j}.polynomial == PSel{d}{j}.right.polynomial)
           right = false;
         end
         if(~left && ~right)
@@ -55,13 +56,11 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
       
       if left
         last = last + 1;
-        L{d}{last}.t = PSel{d}{i}.leftT;
-        L{d}{last}.f = PSel{d}{i}.leftF;
+        L{d}{last} = PSel{d}{i}.left;
       end
       if right
         last = last + 1;
-        L{d}{last}.t = PSel{d}{i}.rightT;
-        L{d}{last}.f = PSel{d}{i}.rightF;
+        L{d}{last} = PSel{d}{i}.right;
       end
     end
     
@@ -81,7 +80,7 @@ end
 
   
   
-% Reduction F4
+% Reduction (F4)
   
 function [Ftplus, F, Ft] = Reduction(L, G, FAll, FtAll)
    
@@ -95,7 +94,6 @@ function [Ftplus, F, Ft] = Reduction(L, G, FAll, FtAll)
   HM = zeros(0, 1);
   for i = 1:size(F, 1)
     index = find(F(i, :), 1, 'first');
-    %order = size(F, 2) - index + 1;
     if ~isempty(index)
       HM = [HM; index];
     end
@@ -112,6 +110,56 @@ function [Ftplus, F, Ft] = Reduction(L, G, FAll, FtAll)
         Ftplus(last, :) = Ft(i, :);
       end
     end
+  end
+  
+end
+
+
+
+% Symbolic Preprocessing (F4)
+
+function [F] = SymbolicPreprocessing(L, G, FAll, FtAll)
+  
+  global maxorder;
+  global allDegs;
+
+  % multiply polynomials from pairs and parse used monomials
+  monomials = zeros(0, 1);
+  headMonomials = zeros(0, 1);
+  F = zeros(length(L), maxorder);
+  for i = 1:length(L)
+    F(i, :) = Multiply(Simplify(L{i}.monomial, L{i}.polynomial, FAll, FtAll));
+    indices = find(F(i, :));
+    headMonomials = unique([headMonomials; size(F, 2) - indices(1) + 1]);
+    monomials = unique([monomials; size(F, 2) - indices(2:end)' + 1]);
+  end
+  
+  % get head monomials of all polynomials from G
+  headMonsGDegs = zeros(size(G, 1), size(allDegs, 2));
+  for i = 1:size(G, 1)
+    index = find(G(i, :), 1, 'first');
+    headMonsGDegs(i, :) = allDegs(size(G, 2) - index + 1, :);
+  end
+  
+  done = headMonomials;
+  remaining = set1diff(monomials, headMonomials);
+  
+  % go throught all monomials
+  while isempty(remaining) ~= 0
+    m = remaining(end);
+    remaining = setdiff(remaining, m);
+    done = [done; m];
+    
+    for i = 1:size(headMonsGDegs, 1)
+      if sum((allDegs(m, :) - headMonsGDegs(i, :)) < 0) == 0
+        F = [F; Multiply(Simplify(allDegs(m, :) - headMonsGDegs(i, :), G(i, :), FAll. FtAll))];
+        indices = find(F(end, :));
+        mons = size(F, 2) - indices' + 1;
+        remaining = unique([remaining; setdiff(mons, done)]);
+        break;
+      end
+    end
+    
   end
   
 end
