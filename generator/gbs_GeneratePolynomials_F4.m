@@ -8,11 +8,17 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   global prime;
   global maxorder;
   global allDegs;
+  global maxDeg;
+  global unknowns;
+  global allMons;
   
   prime = cfg.prime;
   Sel = algorithmCfg.Sel;
   maxorder = length(allmons);
   allDegs = alldegs;
+  maxDeg = maxdeg;
+  unknowns = unknown;
+  allMons = allmons;
   
   d = 0;
   G = zeros(0, maxorder);
@@ -22,7 +28,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   for i = 1:length(p)
     f = zeros(1, maxorder);
     for j = 1:p{i}.monscnt
-      order = GetMonomialOrder(p{i}.deg(j, :), unknown);
+      order = GetMonomialOrder(p{i}.deg(j, :), unknowns);
       f(1, maxorder - order + 1) = p{i}.coefs(j);
       [G, P] = Update(G, P, f);
     end
@@ -185,7 +191,7 @@ function [monomial, polynomial] = Simplify(m, f, FAll, FtAll)
         HMuf = size(uf, 2) - find(uf, 1, 'first') + 1;
         
         % find HM of FtAll{j} such equals to HM(u*f)
-        for k = 1:size(FtAll{j}, 1
+        for k = 1:size(FtAll{j}, 1)
           if (size(FtAll{j}, 2) - find(FtAll{j}(k, :), 1, 'first') + 1) == HMuf
             
             if sum(u(i, :) ~= m) ~= 0
@@ -205,5 +211,42 @@ function [monomial, polynomial] = Simplify(m, f, FAll, FtAll)
   
   monomial = m;
   polynomial = f;
+  
+end
+
+
+
+% Multiply
+% Multiplies monomial m and polynomial f
+
+function [polynomial] = Multiply(m, f)
+  
+  global maxorder;
+  global maxDeg;
+  global unknowns;
+  global allDegs;
+  global allMons;
+  
+  polynomial = zeros(1, maxorder);
+  % multiply each monomial of f
+  orders = size(f, 2) - find(f) + 1;
+  for order = orders
+    deg = allDegs(maxorder - order + 1, :);
+    newOrder = GetMonomialOrder(deg + m, unknowns);
+    
+    if  newOrder > maxorder
+      % enlarge matrix dimensions
+      while newOrder > maxorder
+        maxDeg = maxDeg + 1;
+        [mons, degs] = GenerateMonomials(maxDeg, unknowns);
+        allDegs = [degs; allDegs];
+        allMons = [mons, allMons];
+        maxorder = size(mons, 2);
+      end
+      polynomial = [zeros(1, maxorder - size(polynomial, 2)), polynomial];
+    end
+    
+    polynomial(1, maxorder - newOrder + 1) = f(1, size(f, 2) - order + 1);
+  end
   
 end
