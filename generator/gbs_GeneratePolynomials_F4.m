@@ -152,7 +152,7 @@ function [F] = SymbolicPreprocessing(L, G, FAll, FtAll)
     
     for i = 1:size(headMonsGDegs, 1)
       if sum((allDegs(m, :) - headMonsGDegs(i, :)) < 0) == 0
-        F = [F; Multiply(Simplify(allDegs(m, :) - headMonsGDegs(i, :), G(i, :), FAll. FtAll))];
+        F = [F; Multiply(Simplify(allDegs(m, :) - headMonsGDegs(i, :), G(i, :), FAll, FtAll))];
         indices = find(F(end, :));
         mons = size(F, 2) - indices' + 1;
         remaining = unique([remaining; setdiff(mons, done)]);
@@ -161,5 +161,49 @@ function [F] = SymbolicPreprocessing(L, G, FAll, FtAll)
     end
     
   end
+  
+end
+
+
+
+% Simplify (F4)
+
+function [monomial, polynomial] = Simplify(m, f, FAll, FtAll)
+  
+  % get divisors of m
+  u = GetDivisors(m);
+  u = setdiff(u, zeros(size(m)), 'rows');
+  
+  % go trought all divisors of m
+  for i = 1:size(u, 1)
+    uf = Multiply(u(i, :), f);
+    
+    % go thorught FAll
+    for j = 1:length(FAll)
+      %if exists u*f in FAll{j}
+      if sum(sum(([zeros(size(FAll{j}, 1), size(uf, 2)-size(FAll{j}, 2)) FAll{j}] - ones(size(FAll{j}, 1), 1)*uf) ~= 0, 2) == 0)
+        HMuf = size(uf, 2) - find(uf, 1, 'first') + 1;
+        
+        % find HM of FtAll{j} such equals to HM(u*f)
+        for k = 1:size(FtAll{j}, 1
+          if (size(FtAll{j}, 2) - find(FtAll{j}(k, :), 1, 'first') + 1) == HMuf
+            
+            if sum(u(i, :) ~= m) ~= 0
+              [monomial, polynomial] = Simplify(m - u(i, :), FtAll{j}(k, :), FAll, FtAll);
+              return;
+            else
+              monomial = zeros(size(m));
+              polynomial = FtAll{j}(k, :);
+              return;
+            end
+            
+          end
+        end
+      end
+    end
+  end
+  
+  monomial = m;
+  polynomial = f;
   
 end
