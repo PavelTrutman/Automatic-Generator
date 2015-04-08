@@ -1,3 +1,12 @@
+% Pavel Trutman, pavel.trutman@fel.cvut.cz, April 2015
+%
+% Function generates inputData to be used by benchmark. Data are generated
+% by Normal distribution with mean 0 and standard deviation 1.
+%
+% known - list of knowns
+% kngroups - groups of knowns
+% maxInputs - number of generated inputs
+
 function [inputData] = generateInputData(~, known, ~, kngroups, maxInputs)
   
   % initialize variables
