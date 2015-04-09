@@ -72,12 +72,12 @@ function [res] = gbs_ExportMCode(filename, cfg, M, trace, coefscode, known, know
     for j=1:length(knvars)
       if length(knvars{j}) > 1
         for k=1:length(knvars{j})
-          coefcode = strrep(coefcode, char(knvars{j}(k)), [knvarnames{j} '(' int2str(k) ')']);
+          coefcode = regexprep([coefcode, ' '], ['(', char(knvars{j}(k)), ')[^(0-9]'], [knvarnames{j} '(' int2str(k) ')']);
         end
       end
     end
 
-    fprintf(fid, ['\tc(' int2str(i) ') = ' coefcode ';\n']);
+    fprintf(fid, ['\tc(' int2str(i) ') = ' regexprep(coefcode, '\s*$', '') ';\n']);
   end
   fprintf(fid, '\n');
 
