@@ -1,10 +1,10 @@
 % Generate Matlab Code for given action matrix and coefficient matrices
 % (GBsolver subroutine)
 % by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, February 2015
+% last edit by Pavel Trutman, March 2015
 
 
-function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, lastElim)
+function [res] = gbs_ExportMCode(filename, cfg, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, lastElim)
 
   [p, probname, e] = fileparts(filename);
   if isempty(e)
@@ -35,7 +35,6 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
 
     if length(knvarnames) < knowngroups(i) || isempty(knvarnames(knowngroups(i)))
 
-      %name=regexp(known{i},'\D*', 'match');
       name=known(i);
       knvarnames{knowngroups(i)} = name{1};
     end
@@ -49,8 +48,20 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
   fprintf(fid, '%%     Kukelova Z., Bujnak M., Pajdla T., Automatic Generator of Minimal Problem Solvers,\n');
   fprintf(fid, '%%     ECCV 2008, Marseille, France, October 12-18, 2008\n');
   fprintf(fid, '\n');
-  fprintf(fid, ['function [' c2s((unknown), ', ') '] = ' probname '(' c2s(knvarnames, ', ') ')\n\n']);
+  if cfg.benchmark
+    fprintf(fid, ['function [unknowns, benchData] = ' probname '(args)\n\n']);
+  else
+    fprintf(fid, ['function [' c2s((unknown), ', ') '] = ' probname '(' c2s(knvarnames, ', ') ')\n\n']);
+  end
 
+  if cfg.benchmark
+    fprintf(fid, '\t%% This is a benchmark solver!\n\n');
+    for i = 1:length(knvarnames)
+      fprintf(fid, ['\t', c2s(knvarnames(i)), ' = args(', int2str(i), ', :);\n']);
+    end
+    fprintf(fid, '\n');
+  end
+  
   % coeffs
   fprintf(fid, '\t%% precalculate polynomial equations coefficients\n');
   for i=1:length(coefscode)
@@ -61,12 +72,12 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
     for j=1:length(knvars)
       if length(knvars{j}) > 1
         for k=1:length(knvars{j})
-          coefcode = strrep(coefcode, char(knvars{j}(k)), [knvarnames{j} '(' int2str(k) ')']);
+          coefcode = regexprep([coefcode, ' '], ['(', char(knvars{j}(k)), ')[^(0-9]'], [knvarnames{j} '(' int2str(k) ')']);
         end
       end
     end
 
-    fprintf(fid, ['\tc(' int2str(i) ') = ' coefcode ';\n']);
+    fprintf(fid, ['\tc(' int2str(i) ') = ' regexprep(coefcode, '\s*$', '') ';\n']);
   end
   fprintf(fid, '\n');
 
@@ -176,7 +187,7 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
   ucnt = length(unknown);
   for i=1:ucnt
 
-    fprintf(fid, ['\t\t' unknown{i} ' = [];\n']);
+    fprintf(fid, ['\t\t' unknown{i} ' = zeros(1, 0);\n']);
   end
 
   fprintf(fid, '\telse\n\t\t\n');
@@ -217,6 +228,19 @@ function [res] = gbs_ExportMCode(filename, M, trace, coefscode, known, knowngrou
   end
 
   fprintf(fid, '\tend\n');
+  
+  if cfg.benchmark
+    fprintf(fid, '\n');
+    fprintf(fid, '\t%%save benchmark data\n');
+    for i = 1:length(unknown)
+      fprintf(fid, ['\tunknowns(', int2str(i), ', :) = ', c2s(unknown(i)), ';\n']);
+    end
+    fprintf(fid, '\n');
+    fprintf(fid, ['\tbenchData.polynomials = zeros([', l2s(size(M), ' '), ']);\n']);
+    fprintf(fid, ['\tbenchData.polynomials(:, [', l2s(gjcols, ' '), ']) = M;\n']);
+    fprintf(fid, '\n');
+  end
+  
   fprintf(fid, 'end\n');
 
   fclose(fid);

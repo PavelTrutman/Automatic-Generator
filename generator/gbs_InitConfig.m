@@ -2,7 +2,7 @@
 % (GBsolver subroutine)
 %
 % by Martin Bujnak, mar 2008
-% last edit by Pavel Trutman, February 2015
+% last edit by Pavel Trutman, March 2015
 
 function [cfg] = gbs_InitConfig()
 
@@ -69,4 +69,7 @@ function [cfg] = gbs_InitConfig()
     
     % code to export
     cfg.exportCode = {'matlab' 'maple'};
+    
+    % set benchmark mode
+    cfg.benchmark = 0;
 end

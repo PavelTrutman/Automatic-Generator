@@ -1,3 +1,5 @@
+function [eq, known, unknown, kngroups, cfg, algB] = sw5pt()
+%%
 % 5point relative pose problem
 % http://cmp.felk.cvut.cz/minimal/5_pt_relative.php
 
@@ -43,21 +45,14 @@ for var = vars
 end
 
 %%
-% code export
-
-tic
-
 % specify which "known" variables should be grouped into a single input argument (as
 % a vector). "kngroups" is a vector where kngroups(k) = l says that k-th
 % known variable should be grouped into l-th vector.
 kngroups = ones(9,1)*[1 2 3 4];
 
-% call code generator
-[res export] = gbs_CreateCode('sw5pt', eq, known, unknown, kngroups);
-toc
-
 % optionaly you can call the code generator with 
 % different configuration (cfg) or custom basis of algebra A (algB).
-% Call cfg = gbs_InitConfig(); to initialize cfg variable;
-% 
-% [res export] = gbs_CreateCode('sw5pt', eq, known, unknown, kngroups, cfg, algB);
+cfg = gbs_InitConfig();
+algB = [];
+
+end

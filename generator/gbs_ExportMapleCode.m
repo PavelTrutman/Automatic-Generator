@@ -4,7 +4,7 @@
 % last edit by Pavel Trutman, February 2015
 
 
-function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, lastElim)
+function [res] = gbs_ExportMapleCode(filename, cfg, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, lastElim)
 
   [p, probname, e] = fileparts(filename);
   if isempty(e)
@@ -71,7 +71,7 @@ function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, known
     for j=1:length(knvars)
       if length(knvars{j}) > 1
         for k=1:length(knvars{j})
-          coefcode = strrep(coefcode, char(knvars{j}(k)), [knvarnames{j} '(' int2str(k) ')']);
+          coefcode = regexprep([coefcode, ' '], ['(', char(knvars{j}(k)), ')[^(0-9]'], [knvarnames{j} '(' int2str(k) ')']);
         end
       end
     end
@@ -80,7 +80,7 @@ function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, known
     coefcode = strrep(coefcode, '(', '[');
     coefcode = strrep(coefcode, ')', ']');
 
-    fprintf(fid, ['> \tc[' int2str(i) '] := ' coefcode ':\n']);
+    fprintf(fid, ['> \tc[' int2str(i) '] := ' regexprep(coefcode, '\s*$', '') ':\n']);
   end
   fprintf(fid, '> \n');
 

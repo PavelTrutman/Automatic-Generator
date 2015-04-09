@@ -1,3 +1,5 @@
+function [eq, known, unknown, kngroups, cfg, algB] = sw6pt()
+%%
 % 6point focal length problem
 % http://cmp.felk.cvut.cz/minimal/6_pt_relative.php
 
@@ -41,12 +43,13 @@ end
 
 %%
 
-tic
-
 % define variable groups (optional)
 kngroups = ones(9,1)*[1 2 3];
 
-% call code generator
-[res export] = gbs_CreateCode('sw6pt', eq, known, unknown, kngroups);
+% define configuration
+cfg = gbs_InitConfig();
 
-toc
+% no algB yet computed
+algB = [];
+
+end
