@@ -84,8 +84,129 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   
 end
 
+
+
+% Update (Buchberger)
+
+function [GNew, BNew] = Update(GOld, BOld, h)
   
+  global maxorder;
+  global allDegs;
   
+  % get HM of h
+  hOrder = size(h, 2) - find(h, 1, 'first') + 1;
+  hDeg = allDegs(end - hOrder + 1);
+  
+  D = zeros(0, maxorder);
+  C = GOld;
+  
+  % go throught C
+  for i = 1:size(C, 1)
+    % get HM of g
+    gOrder = size(C, 2) - find(C(i, :), 1, 'first') + 1;
+    gDeg = allDegs(end - gOrder + 1);
+    
+    % are HM(h) and HM(C(i)) disjoint?
+    if sum(min([hDeg, gDeg], [], 1)) == 0
+      % are disjoint
+      D = [D; C(i, :)];
+    else
+      lcmHG = max([hDeg; gDeg], [], 1);
+      condition1 = true;
+      for j = i:size(C, 1)
+        %get HM of g2
+        g2Order = size(C, 2) - find(C(j, :), 1, 'first') + 1;
+        g2Deg = allDegs(end - g2Order + 1);
+        lcmHG2 = max([hDeg; g2Deg], [], 1);
+        % check first condition of divisibility
+        if sum(lcmHG2 < lcmHG) == size(lcmHG, 2)
+          condition1 = false;
+          break;
+        end
+      end
+      
+      if condition1
+        condition2 = true;
+        for j = 1:size(D, 1)
+          g2Order = size(D, 2) - find(D(j, :), 1, 'first') + 1;
+          g2Deg = allDegs(end - g2Order + 1);
+          lcmHG2 = max([hDeg; g2Deg], [], 1);
+          % check second condition of divisibility
+          if sum(lcmHG2 < lcmHG) == size(lcmHG, 2)
+            condition2 = false;
+            break;
+          end
+        end
+        
+        if condition2
+          % all conditions satisfied
+          D = [D; C(i, :)];
+        end
+      end
+      
+    end
+  end
+  
+  E = cell(0, 1);
+  last = 0;
+  % go throught D
+  for i = 1:size(D, 1)
+    % get HM of g
+    gOrder = size(D, 2) - find(D(i, :), 1, 'first') + 1;
+    gDeg = allDegs(end - gOrder + 1);
+    if sum(min([hDeg, gDeg], [], 1)) ~= 0
+      % are not disjoint
+      lcmHG = max([hDeg; gDeg], [], 1);
+      % create pair
+      last = last + 1;
+      E{last}.left.polynomial = h;
+      E{last}.left.monomial = lcmHG - hDeg;
+      E{last}.right.polynomial = D(i, :);
+      E{last}.right.monomial = lcmHG - gDeg;
+      E{last}.lcm = lcmHG;
+    end
+  end
+  
+  BNew = cell(0, 1);
+  last = 0;
+  % go thorought BOld
+  for i = 1:length(BOld)
+    % get HM of g1 and g2
+    g1Order = size(BOld{i}.left.polynomial, 2) - find(BOld{i}.left.polynomial, 1, 'first') + 1;
+    g1Deg = allDegs(end - g1Order + 1);
+    g2Order = size(BOld{i}.right.polynomial, 2) - find(BOld{i}.right.polynomial, 1, 'first') + 1;
+    g2Deg = allDegs(end - g2Order + 1);
+
+    if (sum(hDeg < BOld{i}.lcm) < size(hDeg, 2)) || (sum(max([hDeg; g1Deg], [], 1) ~= BOld{i}.lcm) == 0) || (sum(max([hDeg; g2Deg], [], 1) ~= BOld{i}.lcm) == 0)
+      % add pair
+      last = last + 1;
+      BNew{last} = BOld{i};
+    end
+  end
+  
+  % add E into BNew
+  BNew = vertcat(BNew, E);
+  
+  GNew = zeros(0, maxorder);
+  last = 0;
+  % go thorought GOld
+  for i = 1:size(GOld, 1)
+    % get HM of g
+    gOrder = size(GOld, 2) - find(GOld(i, :), 1, 'first') + 1;
+    gDeg = allDegs(end - gOrder + 1);
+    
+    if sum(hDeg < gDeg) < size(hDeg, 2)
+      last = last + 1;
+      GNew(last, :) = GOld(i, :);
+    end
+  end
+  
+  % add h into GNew
+  GNew(end + 1, :) = h;
+end
+
+
+
 % Reduction (F4)
   
 function [Ftplus, F, Ft] = Reduction(L, G, FAll, FtAll)
