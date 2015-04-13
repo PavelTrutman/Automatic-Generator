@@ -57,7 +57,7 @@ function [cfg] = gbs_InitConfig()
     cfg.PolynomialsGenerator = @gbs_GeneratePolynomials_F4;
     % config of this algorithm
       % define selection strategy of the F4 algorithm
-      cfg.PolynomialsGeneratorCfg.Sel = @F4_SelFirst;
+      cfg.PolynomialsGeneratorCfg.Sel = @F4_SelNormal;
     
     
     % use matrix partitioning (by PaToH)
