@@ -30,13 +30,16 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     for j = 1:p{i}.monscnt
       order = GetMonomialOrder(p{i}.deg(j, :), unknowns);
       f(1, maxorder - order + 1) = p{i}.coefs(j);
-      [G, P] = Update(G, P, f);
     end
+    [G, P] = Update(G, P, f);
   end
   
   % itarate over pairs
-  while lenght(P) ~= 0
+  while length(P) ~= 0
     d = d + 1;
+    F{d} = zeros(0, 0);
+    Ft{d} = zeros(0, 0);
+    
     % select pairs
     [PSel{d}, P] = Sel(P);
     
@@ -95,7 +98,11 @@ function [GNew, BNew] = Update(GOld, BOld, h)
   
   % get HM of h
   hOrder = size(h, 2) - find(h, 1, 'first') + 1;
-  hDeg = allDegs(end - hOrder + 1);
+  hDeg = allDegs(end - hOrder + 1, :);
+  
+  if size(GOld, 2) < maxorder
+    GOld = [zeros(size(GOld, 1), maxorder - size(GOld, 2)), GOld];
+  end
   
   D = zeros(0, maxorder);
   C = GOld;
@@ -104,7 +111,7 @@ function [GNew, BNew] = Update(GOld, BOld, h)
   for i = 1:size(C, 1)
     % get HM of g
     gOrder = size(C, 2) - find(C(i, :), 1, 'first') + 1;
-    gDeg = allDegs(end - gOrder + 1);
+    gDeg = allDegs(end - gOrder + 1, :);
     
     % are HM(h) and HM(C(i)) disjoint?
     if sum(min([hDeg, gDeg], [], 1)) == 0
@@ -116,7 +123,7 @@ function [GNew, BNew] = Update(GOld, BOld, h)
       for j = i:size(C, 1)
         %get HM of g2
         g2Order = size(C, 2) - find(C(j, :), 1, 'first') + 1;
-        g2Deg = allDegs(end - g2Order + 1);
+        g2Deg = allDegs(end - g2Order + 1, :);
         lcmHG2 = max([hDeg; g2Deg], [], 1);
         % check first condition of divisibility
         if sum(lcmHG2 < lcmHG) == size(lcmHG, 2)
@@ -129,7 +136,7 @@ function [GNew, BNew] = Update(GOld, BOld, h)
         condition2 = true;
         for j = 1:size(D, 1)
           g2Order = size(D, 2) - find(D(j, :), 1, 'first') + 1;
-          g2Deg = allDegs(end - g2Order + 1);
+          g2Deg = allDegs(end - g2Order + 1, :);
           lcmHG2 = max([hDeg; g2Deg], [], 1);
           % check second condition of divisibility
           if sum(lcmHG2 < lcmHG) == size(lcmHG, 2)
@@ -153,17 +160,17 @@ function [GNew, BNew] = Update(GOld, BOld, h)
   for i = 1:size(D, 1)
     % get HM of g
     gOrder = size(D, 2) - find(D(i, :), 1, 'first') + 1;
-    gDeg = allDegs(end - gOrder + 1);
+    gDeg = allDegs(end - gOrder + 1, :);
     if sum(min([hDeg, gDeg], [], 1)) ~= 0
       % are not disjoint
       lcmHG = max([hDeg; gDeg], [], 1);
       % create pair
       last = last + 1;
-      E{last}.left.polynomial = h;
-      E{last}.left.monomial = lcmHG - hDeg;
-      E{last}.right.polynomial = D(i, :);
-      E{last}.right.monomial = lcmHG - gDeg;
-      E{last}.lcm = lcmHG;
+      E{last, 1}.left.polynomial = h;
+      E{last, 1}.left.monomial = lcmHG - hDeg;
+      E{last, 1}.right.polynomial = D(i, :);
+      E{last, 1}.right.monomial = lcmHG - gDeg;
+      E{last, 1}.lcm = lcmHG;
     end
   end
   
@@ -173,14 +180,14 @@ function [GNew, BNew] = Update(GOld, BOld, h)
   for i = 1:length(BOld)
     % get HM of g1 and g2
     g1Order = size(BOld{i}.left.polynomial, 2) - find(BOld{i}.left.polynomial, 1, 'first') + 1;
-    g1Deg = allDegs(end - g1Order + 1);
+    g1Deg = allDegs(end - g1Order + 1, :);
     g2Order = size(BOld{i}.right.polynomial, 2) - find(BOld{i}.right.polynomial, 1, 'first') + 1;
-    g2Deg = allDegs(end - g2Order + 1);
+    g2Deg = allDegs(end - g2Order + 1, :);
 
     if (sum(hDeg < BOld{i}.lcm) < size(hDeg, 2)) || (sum(max([hDeg; g1Deg], [], 1) ~= BOld{i}.lcm) == 0) || (sum(max([hDeg; g2Deg], [], 1) ~= BOld{i}.lcm) == 0)
       % add pair
       last = last + 1;
-      BNew{last} = BOld{i};
+      BNew{last, 1} = BOld{i};
     end
   end
   
@@ -193,9 +200,9 @@ function [GNew, BNew] = Update(GOld, BOld, h)
   for i = 1:size(GOld, 1)
     % get HM of g
     gOrder = size(GOld, 2) - find(GOld(i, :), 1, 'first') + 1;
-    gDeg = allDegs(end - gOrder + 1);
+    gDeg = allDegs(end - gOrder + 1, :);
     
-    if sum(hDeg < gDeg) < size(hDeg, 2)
+    if sum(hDeg <= gDeg) < size(hDeg, 2)
       last = last + 1;
       GNew(last, :) = GOld(i, :);
     end
@@ -255,7 +262,12 @@ function [F] = SymbolicPreprocessing(L, G, FAll, FtAll)
   headMonomials = zeros(0, 1);
   F = zeros(length(L), maxorder);
   for i = 1:length(L)
-    F(i, :) = Multiply(Simplify(L{i}.monomial, L{i}.polynomial, FAll, FtAll));
+    [monomial, polynomial] = Simplify(L{i}.monomial, L{i}.polynomial, FAll, FtAll);
+    f = Multiply(monomial, polynomial);
+    if size(f, 2) > size(F, 2)
+      F = [zeros(size(F, 1), size(f, 2) - size(F, 2)), F];
+    end
+    F(i, :) = Multiply(monomial, polynomial);
     indices = find(F(i, :));
     headMonomials = unique([headMonomials; size(F, 2) - indices(1) + 1]);
     monomials = unique([monomials; size(F, 2) - indices(2:end)' + 1]);
@@ -265,21 +277,22 @@ function [F] = SymbolicPreprocessing(L, G, FAll, FtAll)
   headMonsGDegs = zeros(size(G, 1), size(allDegs, 2));
   for i = 1:size(G, 1)
     index = find(G(i, :), 1, 'first');
-    headMonsGDegs(i, :) = allDegs(size(G, 2) - index + 1, :);
+    headMonsGDegs(i, :) = allDegs(end - size(G, 2) + index, :);
   end
   
   done = headMonomials;
-  remaining = set1diff(monomials, headMonomials);
+  remaining = setdiff(monomials, headMonomials);
   
   % go throught all monomials
-  while isempty(remaining) ~= 0
+  while isempty(remaining) == 0
     m = remaining(end);
     remaining = setdiff(remaining, m);
     done = [done; m];
     
     for i = 1:size(headMonsGDegs, 1)
-      if sum((allDegs(m, :) - headMonsGDegs(i, :)) < 0) == 0
-        F = [F; Multiply(Simplify(allDegs(m, :) - headMonsGDegs(i, :), G(i, :), FAll, FtAll))];
+      if sum((allDegs(end - m + 1, :) - headMonsGDegs(i, :)) < 0) == 0
+        [monomial, polynomial] = Simplify(allDegs(end - m + 1, :) - headMonsGDegs(i, :), G(i, :), FAll, FtAll);
+        F = [F; Multiply(monomial, polynomial)];
         indices = find(F(end, :));
         mons = size(F, 2) - indices' + 1;
         remaining = unique([remaining; setdiff(mons, done)]);
@@ -360,9 +373,9 @@ function [polynomial] = Multiply(m, f)
       while newOrder > maxorder
         maxDeg = maxDeg + 1;
         [mons, degs] = GenerateMonomials(maxDeg, unknowns);
-        allDegs = [degs; allDegs];
-        allMons = [mons, allMons];
-        maxorder = size(mons, 2);
+        allDegs = [degs(end:-1:1, :); allDegs];
+        allMons = [mons(end:-1:1), allMons];
+        maxorder = size(allMons, 2);
       end
       polynomial = [zeros(1, maxorder - size(polynomial, 2)), polynomial];
     end
