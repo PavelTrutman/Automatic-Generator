@@ -77,7 +77,7 @@ function [results] = gbs_Benchmark(problemName, benchmarkFunction, inputData, co
     results{i}.err = validationFunction(inputData, correctOutput, results{i}.solution, results{i}.benchData, unknown, cfg);
     
     % render results
-    renderFunction(results{i}, benchmark);
+    renderFunction(results{i}, benchmark, length(benchmarkConfig), i);
     
   end
 

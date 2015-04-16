@@ -3,9 +3,11 @@
 % Default function for rendering errors for benchmarking.
 %
 % results - results of benchmark
-% benchmark = settings of benchmark
+% benchmark - settings of benchmark
+% numFigures - total count of figures to be displayed on the screen
+% i - index of current subfigure
 
-function [] = renderHistogram(results, benchmark)
+function [] = renderHistogram(results, benchmark, numFigures, i)
   
   % reshape into vector and get rid of NaNs
   vector = reshape(results.err, [], 1);
@@ -15,21 +17,34 @@ function [] = renderHistogram(results, benchmark)
   vector = log10(vector);
   
   % get rid of -Inf
-  vector = vector(vector ~= -Inf);
+  ix = vector ~= -Inf;
+  vector = vector(ix);
   
   % prepare data for histogram
   range = (min(vector):(max(vector)-min(vector))/100:max(vector))';
   count = histc(vector, range);
   
+  % divide screen into adequate number of subfigures
+  if numFigures <= 4
+    rows = 2;
+    cols = 2;
+  elseif numFigures <= 6
+    rows = 2;
+    cols = 3;
+  else
+    rows = 3;
+    cols = 4;
+  end
+  
   % plot histogram
-  figure;
+  subfig(rows, cols, i);
   f = fit(range, count, 'smoothingspline');
   plot(f, '-b');
   legend('off');
   axis([min(range) max(range) min(count) max(count)]);
   title(['Histogram of error. (', benchmark.info, ')']);
   ylabel('Frequency');
-  xlabel('Log10 of error');
+  xlabel(sprintf('Log10 of |error| for |error| > 0, %.2e of error = 0', nnz(~ix)/length(ix)));
   drawnow;
   
 end
