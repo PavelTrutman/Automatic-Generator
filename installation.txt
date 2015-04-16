@@ -81,12 +81,13 @@ solution to remaining unknowns.
 First test
 ----------
 
-Open one of the testing files "sw6pttest.m" or "sw5pttest.m" and execute 
-the code. Both examples are self explanatory and will teach you how to use 
-the generator.
+To add all required paths run script "setpaths.m".
+
+Set of some examples of minimal problems are stored in folder 
+"minimalProblems". To generate solver for some exmaple execute function 
+"gbs_GenerateSolver(nameOfMinimalProblem)", for example 
+"gbs_GenerateSolver('sw6pt')". All examples of minimal problems are self 
+explanatory and will teach you how to use the generator.
 
 The solver generator must be called from its root directory (the place, 
-where "setpath.m" file is located)
-
-
-
+where "setpath.m" file is located).
