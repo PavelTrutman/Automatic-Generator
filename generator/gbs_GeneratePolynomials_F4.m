@@ -11,6 +11,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   global maxDeg;
   global unknowns;
   global allMons;
+  global ordering;
   
   prime = cfg.prime;
   Sel = algorithmCfg.Sel;
@@ -19,6 +20,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   maxDeg = maxdeg;
   unknowns = unknown;
   allMons = allmons;
+  ordering = cfg.ordering;
   
   d = 0;
   G = zeros(0, maxorder);
@@ -52,10 +54,10 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
       right = true;
       % check duplicity of pairs
       for j = 1:length(L{d})
-        if(left && L{d}{j}.monomial == PSel{d}{i}.left.monomial && L{d}{j}.polynomial == PSel{d}{j}.left.polynomial)
+        if(left && size(L{d}{j}.polynomial, 2) == size(PSel{d}{i}.left.polynomial, 2) && sum(L{d}{j}.monomial ~= PSel{d}{i}.left.monomial) == 0 && sum(L{d}{j}.polynomial ~= PSel{d}{i}.left.polynomial) == 0)
           left = false;
         end
-        if(right && L{d}{j}.monomial == PSel{d}{i}.right.monomial && L{d}{j}.polynomial == PSel{d}{j}.right.polynomial)
+        if(right && size(L{d}{j}.polynomial, 2) == size(PSel{d}{i}.right.polynomial, 2) && sum(L{d}{j}.monomial ~= PSel{d}{i}.right.monomial) == 0 && sum(L{d}{j}.polynomial ~= PSel{d}{i}.right.polynomial) == 0)
           right = false;
         end
         if(~left && ~right)
@@ -81,7 +83,17 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
       [G, P] = Update(G, P, Ftplus{d}(i, :));
     end
     
+    % recompute  amStats
+    for a = 1:length(amStats)
+      amStats{a}.zero_el = setdiff(1:size(G, 2), (size(G, 2) + 1) - amStats{a}.algBidx);
+    end
+    
+    % check conditions for the action matrix
     foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
+    
+    if foundVar
+      break;
+    end
     
   end
   
@@ -114,19 +126,19 @@ function [GNew, BNew] = Update(GOld, BOld, h)
     gDeg = allDegs(end - gOrder + 1, :);
     
     % are HM(h) and HM(C(i)) disjoint?
-    if sum(min([hDeg, gDeg], [], 1)) == 0
+    if sum(min([hDeg; gDeg], [], 1)) == 0
       % are disjoint
       D = [D; C(i, :)];
     else
       lcmHG = max([hDeg; gDeg], [], 1);
       condition1 = true;
-      for j = i:size(C, 1)
+      for j = i + 1:size(C, 1)
         %get HM of g2
         g2Order = size(C, 2) - find(C(j, :), 1, 'first') + 1;
         g2Deg = allDegs(end - g2Order + 1, :);
         lcmHG2 = max([hDeg; g2Deg], [], 1);
         % check first condition of divisibility
-        if sum(lcmHG2 < lcmHG) == size(lcmHG, 2)
+        if sum(lcmHG2 <= lcmHG) == size(lcmHG, 2)
           condition1 = false;
           break;
         end
@@ -139,7 +151,7 @@ function [GNew, BNew] = Update(GOld, BOld, h)
           g2Deg = allDegs(end - g2Order + 1, :);
           lcmHG2 = max([hDeg; g2Deg], [], 1);
           % check second condition of divisibility
-          if sum(lcmHG2 < lcmHG) == size(lcmHG, 2)
+          if sum(lcmHG2 <= lcmHG) == size(lcmHG, 2)
             condition2 = false;
             break;
           end
@@ -161,7 +173,7 @@ function [GNew, BNew] = Update(GOld, BOld, h)
     % get HM of g
     gOrder = size(D, 2) - find(D(i, :), 1, 'first') + 1;
     gDeg = allDegs(end - gOrder + 1, :);
-    if sum(min([hDeg, gDeg], [], 1)) ~= 0
+    if sum(min([hDeg; gDeg], [], 1)) ~= 0
       % are not disjoint
       lcmHG = max([hDeg; gDeg], [], 1);
       % create pair
@@ -222,7 +234,13 @@ function [Ftplus, F, Ft] = Reduction(L, G, FAll, FtAll)
   global maxorder;
  
   F = SymbolicPreprocessing(L, G, FAll, FtAll);
-  Ft = gjzpsp(F, prime);
+  
+  nonzero = find(sum(F) ~= 0);
+  Kk = F(:, nonzero);
+  fprintf('  Reducing matrix %dx%d\n', size(Kk, 1), size(Kk, 2));
+  B = gjzpsp(Kk, prime);
+  Ft = zeros(size(F, 1), size(F, 2));
+  Ft(:, nonzero) = B;
   
   % pick head monomials
   HM = zeros(0, 1);
@@ -267,7 +285,7 @@ function [F] = SymbolicPreprocessing(L, G, FAll, FtAll)
     if size(f, 2) > size(F, 2)
       F = [zeros(size(F, 1), size(f, 2) - size(F, 2)), F];
     end
-    F(i, :) = Multiply(monomial, polynomial);
+    F(i, :) = f;
     indices = find(F(i, :));
     headMonomials = unique([headMonomials; size(F, 2) - indices(1) + 1]);
     monomials = unique([monomials; size(F, 2) - indices(2:end)' + 1]);
@@ -314,12 +332,15 @@ function [monomial, polynomial] = Simplify(m, f, FAll, FtAll)
   u = GetDivisors(m);
   u = setdiff(u, zeros(size(m)), 'rows');
   
+  [~, IX] = sort(sum(u, 2), 'ascend');
+  u = u(IX, :);
+  
   % go trought all divisors of m
   for i = 1:size(u, 1)
     uf = Multiply(u(i, :), f);
     
     % go thorught FAll
-    for j = 1:length(FAll)
+    for j = 1:length(FAll) - 1
       %if exists u*f in FAll{j}
       if sum(sum(([zeros(size(FAll{j}, 1), size(uf, 2)-size(FAll{j}, 2)) FAll{j}] - ones(size(FAll{j}, 1), 1)*uf) ~= 0, 2) == 0)
         HMuf = size(uf, 2) - find(uf, 1, 'first') + 1;
@@ -360,6 +381,7 @@ function [polynomial] = Multiply(m, f)
   global unknowns;
   global allDegs;
   global allMons;
+  global ordering;
   
   polynomial = zeros(1, maxorder);
   % multiply each monomial of f
@@ -372,9 +394,9 @@ function [polynomial] = Multiply(m, f)
       % enlarge matrix dimensions
       while newOrder > maxorder
         maxDeg = maxDeg + 1;
-        [mons, degs] = GenerateMonomials(maxDeg, unknowns);
-        allDegs = [degs(end:-1:1, :); allDegs];
-        allMons = [mons(end:-1:1), allMons];
+        [mons, degs] = GenerateMonomials(maxDeg, unknowns, ordering);
+        allDegs = [degs; allDegs];
+        allMons = [mons, allMons];
         maxorder = size(allMons, 2);
       end
       polynomial = [zeros(1, maxorder - size(polynomial, 2)), polynomial];
