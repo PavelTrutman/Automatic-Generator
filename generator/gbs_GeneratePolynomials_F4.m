@@ -12,6 +12,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   global unknowns;
   global allMons;
   global ordering;
+  global GRefs;
   
   prime = cfg.prime;
   Sel = algorithmCfg.Sel;
@@ -25,6 +26,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   d = 0;
   G = zeros(0, maxorder);
   P = cell(0, 1);
+  GRefs = zeros(0, 2);
   
   % make pairs
   for i = 1:length(p)
@@ -33,7 +35,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
       order = GetMonomialOrder(p{i}.deg(j, :), unknowns);
       f(1, maxorder - order + 1) = p{i}.coefs(j);
     end
-    [G, P] = Update(G, P, f);
+    [G, P, GRefs] = Update(G, P, f, GRefs, 0, i);
   end
   
   % itarate over pairs
@@ -76,11 +78,14 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     end
     
     % reducto
-    [Ftplus{d}, F{d}, Ft{d}] = Reduction(L{d}, G, F, Ft);
+    [Ftplus{d}, F{d}, Ft{d}, FRefs, traceRefs, traceCoefs] = Reduction(L{d}, G, F, Ft);
+    
+    trace{d}.refs = traceRefs;
+    trace{d}.coefs = traceCoefs;
     
     % insert new pairs
     for i = 1:size(Ftplus{d}, 1)
-      [G, P] = Update(G, P, Ftplus{d}(i, :));
+      [G, P, GRefs] = Update(G, P, Ftplus{d}(i, :), GRefs, d, FRefs(i, 1));
     end
     
     % recompute  amStats
@@ -96,8 +101,8 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     end
     
   end
-  
-  trace = [];
+
+  trace{d + 1}.refs = GRefs;
   
 end
 
@@ -105,7 +110,7 @@ end
 
 % Update (Buchberger)
 
-function [GNew, BNew] = Update(GOld, BOld, h)
+function [GNew, BNew, GNewRefs] = Update(GOld, BOld, h, GOldRefs, hMatrixId, hPolRow)
   
   global maxorder;
   global allDegs;
@@ -120,6 +125,8 @@ function [GNew, BNew] = Update(GOld, BOld, h)
   
   D = zeros(0, maxorder);
   C = GOld;
+  DRefs = zeros(0, 2);
+  CRefs = GOldRefs;
   
   % go throught C
   for i = 1:size(C, 1)
@@ -131,6 +138,7 @@ function [GNew, BNew] = Update(GOld, BOld, h)
     if sum(min([hDeg; gDeg], [], 1)) == 0
       % are disjoint
       D = [D; C(i, :)];
+      DRefs = [DRefs; CRefs(i, :)];
     else
       lcmHG = max([hDeg; gDeg], [], 1);
       condition1 = true;
@@ -162,6 +170,7 @@ function [GNew, BNew] = Update(GOld, BOld, h)
         if condition2
           % all conditions satisfied
           D = [D; C(i, :)];
+          DRefs = [DRefs; CRefs(i, :)];
         end
       end
       
@@ -182,8 +191,12 @@ function [GNew, BNew] = Update(GOld, BOld, h)
       last = last + 1;
       E{last, 1}.left.polynomial = h;
       E{last, 1}.left.monomial = lcmHG - hDeg;
+      E{last, 1}.left.matrixId = hMatrixId;
+      E{last, 1}.left.polRow = hPolRow;
       E{last, 1}.right.polynomial = D(i, :);
       E{last, 1}.right.monomial = lcmHG - gDeg;
+      E{last, 1}.right.matrixId = DRefs(i, 1);
+      E{last, 1}.right.polRow = DRefs(i, 2);
       E{last, 1}.lcm = lcmHG;
     end
   end
@@ -209,6 +222,7 @@ function [GNew, BNew] = Update(GOld, BOld, h)
   BNew = vertcat(BNew, E);
   
   GNew = zeros(0, maxorder);
+  GNewRefs = zeros(0, 2);
   last = 0;
   % go thorought GOld
   for i = 1:size(GOld, 1)
@@ -219,23 +233,25 @@ function [GNew, BNew] = Update(GOld, BOld, h)
     if sum(hDeg <= gDeg) < size(hDeg, 2)
       last = last + 1;
       GNew(last, :) = GOld(i, :);
+      GNewRefs(last, :) = GOldRefs(i, :);
     end
   end
   
   % add h into GNew
   GNew(end + 1, :) = h;
+  GNewRefs(end + 1, :) = [hMatrixId, hPolRow];
 end
 
 
 
 % Reduction (F4)
   
-function [Ftplus, F, Ft] = Reduction(L, G, FAll, FtAll)
+function [Ftplus, F, Ft, FtRefs, traceRefs, traceCoefs] = Reduction(L, G, FAll, FtAll)
    
   global prime;
   global maxorder;
  
-  F = SymbolicPreprocessing(L, G, FAll, FtAll);
+  [F, traceRefs, traceCoefs] = SymbolicPreprocessing(L, G, FAll, FtAll);
   
   nonzero = find(sum(F) ~= 0);
   Kk = F(:, nonzero);
@@ -256,12 +272,14 @@ function [Ftplus, F, Ft] = Reduction(L, G, FAll, FtAll)
   % pick rows with new head monomials
   last = 0;
   Ftplus = zeros(0, maxorder);
+  FtRefs = zeros(0, 1);
   for i = 1:size(F, 1)
     index =find(Ft(i, :), 1, 'first');
     if ~isempty(index)
       if sum(HM == index) == 0
         last = last + 1;
         Ftplus(last, :) = Ft(i, :);
+        FtRefs(last, 1) = i;
       end
     end
   end
@@ -272,22 +290,28 @@ end
 
 % Symbolic Preprocessing (F4)
 
-function [F] = SymbolicPreprocessing(L, G, FAll, FtAll)
+function [F, traceRefs, traceCoefs] = SymbolicPreprocessing(L, G, FAll, FtAll)
   
   global maxorder;
   global allDegs;
+  global GRefs;
 
   % multiply polynomials from pairs and parse used monomials
   monomials = zeros(0, 1);
   headMonomials = zeros(0, 1);
   F = zeros(length(L), maxorder);
+  traceRefs = zeros(length(L), 2);
+  traceCoefs = zeros(length(L), maxorder);
   for i = 1:length(L)
-    [monomial, polynomial] = Simplify(L{i}.monomial, L{i}.polynomial, FAll, FtAll);
-    f = Multiply(monomial, polynomial);
+    [monomial, polynomial, matrixId, polRow] = Simplify(L{i}.monomial, L{i}.polynomial, FAll, FtAll, L{i}.matrixId, L{i}.polRow);
+    [f, coefs] = Multiply(monomial, polynomial);
     if size(f, 2) > size(F, 2)
       F = [zeros(size(F, 1), size(f, 2) - size(F, 2)), F];
+      traceCoefs = [zeros(size(traceCoefs, 1), size(coefs, 2) - size(traceCoefs, 2)), traceCoefs];
     end
     F(i, :) = f;
+    traceRefs(i, :) = [matrixId, polRow];
+    traceCoefs(i, :) = coefs;
     indices = find(F(i, :));
     headMonomials = unique([headMonomials; size(F, 2) - indices(1) + 1]);
     monomials = unique([monomials; size(F, 2) - indices(2:end)' + 1]);
@@ -311,8 +335,11 @@ function [F] = SymbolicPreprocessing(L, G, FAll, FtAll)
     
     for i = 1:size(headMonsGDegs, 1)
       if sum((allDegs(end - m + 1, :) - headMonsGDegs(i, :)) < 0) == 0
-        [monomial, polynomial] = Simplify(allDegs(end - m + 1, :) - headMonsGDegs(i, :), G(i, :), FAll, FtAll);
-        F = [F; Multiply(monomial, polynomial)];
+        [monomial, polynomial, matrixId, polRow] = Simplify(allDegs(end - m + 1, :) - headMonsGDegs(i, :), G(i, :), FAll, FtAll, GRefs(i, 1), GRefs(i, 2));
+        [f, coefs] = Multiply(monomial, polynomial);
+        F = [F; f];
+        traceRefs = [traceRefs; matrixId, polRow];
+        traceCoefs = [traceCoefs; coefs];
         indices = find(F(end, :));
         mons = size(F, 2) - indices' + 1;
         remaining = unique([remaining; setdiff(mons, done)]);
@@ -328,7 +355,7 @@ end
 
 % Simplify (F4)
 
-function [monomial, polynomial] = Simplify(m, f, FAll, FtAll)
+function [monomial, polynomial, matrixIdNew, polRowNew] = Simplify(m, f, FAll, FtAll, matrixId, polRow)
   
   % get divisors of m
   u = GetDivisors(m);
@@ -352,11 +379,13 @@ function [monomial, polynomial] = Simplify(m, f, FAll, FtAll)
           if (size(FtAll{j}, 2) - find(FtAll{j}(k, :), 1, 'first') + 1) == HMuf
             
             if sum(u(i, :) ~= m) ~= 0
-              [monomial, polynomial] = Simplify(m - u(i, :), FtAll{j}(k, :), FAll, FtAll);
+              [monomial, polynomial, matrixIdNew, polRowNew] = Simplify(m - u(i, :), FtAll{j}(k, :), FAll, FtAll, j, k);
               return;
             else
               monomial = zeros(size(m));
               polynomial = FtAll{j}(k, :);
+              matrixIdNew = j;
+              polRowNew = k;
               return;
             end
             
@@ -366,6 +395,8 @@ function [monomial, polynomial] = Simplify(m, f, FAll, FtAll)
     end
   end
   
+  matrixIdNew = matrixId;
+  polRowNew = polRow;
   monomial = m;
   polynomial = f;
   
@@ -376,7 +407,7 @@ end
 % Multiply
 % Multiplies monomial m and polynomial f
 
-function [polynomial] = Multiply(m, f)
+function [polynomial, coefs] = Multiply(m, f)
   
   global maxorder;
   global maxDeg;
@@ -386,6 +417,7 @@ function [polynomial] = Multiply(m, f)
   global ordering;
   
   polynomial = zeros(1, maxorder);
+  coefs = zeros(1, maxorder);
   % multiply each monomial of f
   orders = size(f, 2) - find(f) + 1;
   for order = orders
@@ -402,9 +434,11 @@ function [polynomial] = Multiply(m, f)
         maxorder = size(allMons, 2);
       end
       polynomial = [zeros(1, maxorder - size(polynomial, 2)), polynomial];
+      coefs = [zeros(1, maxorder - size(coefs, 2)), coefs];
     end
     
     polynomial(1, maxorder - newOrder + 1) = f(1, size(f, 2) - order + 1);
+    coefs(1, maxorder - newOrder + 1) = order;
   end
   
 end
