@@ -1,9 +1,9 @@
 % Generate all polynomials required to build an action matrix. Polynomials
 % are generated with using some strategies from F4 algorithm.
-% by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, March 2015
 
-function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, algorithmCfg)
+% last edit by Pavel Trutman, April 2015
+
+function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, algorithmCfg)
   
   global prime;
   global maxorder;
@@ -96,6 +96,8 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     end
     
   end
+  
+  trace = [];
   
 end
 

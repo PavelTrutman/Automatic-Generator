@@ -47,14 +47,14 @@ function [cfg] = gbs_InitConfig()
     
     % generator of polynomials
     % generate polynomials to selected degree
-    %cfg.PolynomialsGenerator = @gbs_GeneratePolynomials_Primitive;
+    %cfg.PolynomialsGenerator = 'Primitive';
     % config of this algorithm:
       % the total degree of the polynomials, we are generating polynomials up to, is inceased by GJstep after each GJ elimination
       % 0 means perform only one GJ elimination at the end
       %cfg.PolynomialsGeneratorCfg.GJstep = 0;
       
     % use strategies from F4 algorithm
-    cfg.PolynomialsGenerator = @gbs_GeneratePolynomials_F4;
+    cfg.PolynomialsGenerator = 'F4';
     % config of this algorithm
       % define selection strategy of the F4 algorithm
       cfg.PolynomialsGeneratorCfg.Sel = @F4_SelNormal;

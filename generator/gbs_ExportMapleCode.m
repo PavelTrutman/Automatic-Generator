@@ -4,7 +4,7 @@
 % last edit by Pavel Trutman, February 2015
 
 
-function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, lastElim)
+function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, lastElim, cfg)
 
   [p, probname, e] = fileparts(filename);
   if isempty(e)

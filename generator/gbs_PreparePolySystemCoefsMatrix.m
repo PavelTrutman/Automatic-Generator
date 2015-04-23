@@ -130,7 +130,8 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
 
     fprintf('Adding polynomials\n');
     
-    [foundVar, M, trace] = cfg.PolynomialsGenerator(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, cfg.PolynomialsGeneratorCfg);
+    PolynomialsGenerator = str2func(['gbs_GeneratePolynomials_', cfg.PolynomialsGenerator]);
+    [foundVar, M, trace] = PolynomialsGenerator(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, cfg.PolynomialsGeneratorCfg);
     
     if ~foundVar
         
