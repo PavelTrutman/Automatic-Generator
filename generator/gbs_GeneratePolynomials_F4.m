@@ -13,6 +13,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   global allMons;
   global ordering;
   global GRefs;
+  global input;
   
   prime = cfg.prime;
   Sel = algorithmCfg.Sel;
@@ -22,11 +23,13 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   unknowns = unknown;
   allMons = allmons;
   ordering = cfg.ordering;
+  input = p;
   
   d = 0;
   G = zeros(0, maxorder);
   P = cell(0, 1);
   GRefs = zeros(0, 2);
+  GCoefs = zeros(0, maxorder);
   
   % make pairs
   for i = 1:length(p)
@@ -35,7 +38,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
       order = GetMonomialOrder(p{i}.deg(j, :), unknowns);
       f(1, maxorder - order + 1) = p{i}.coefs(j);
     end
-    [G, P, GRefs] = Update(G, P, f, GRefs, 0, i);
+    [G, P, GRefs, GCoefs] = Update(G, P, f, GRefs, GCoefs, 0, i);
   end
   
   % itarate over pairs
@@ -85,7 +88,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     
     % insert new pairs
     for i = 1:size(Ftplus{d}, 1)
-      [G, P, GRefs] = Update(G, P, Ftplus{d}(i, :), GRefs, d, FRefs(i, 1));
+      [G, P, GRefs, GCoefs] = Update(G, P, Ftplus{d}(i, :), GRefs, GCoefs, d, FRefs(i, 1));
     end
     
     % recompute  amStats
@@ -103,6 +106,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   end
 
   trace{d + 1}.refs = GRefs;
+  trace{d + 1}.coefs = GCoefs;
   
 end
 
@@ -110,10 +114,11 @@ end
 
 % Update (Buchberger)
 
-function [GNew, BNew, GNewRefs] = Update(GOld, BOld, h, GOldRefs, hMatrixId, hPolRow)
+function [GNew, BNew, GNewRefs, GNewCoefs] = Update(GOld, BOld, h, GOldRefs, GOldCoefs, hMatrixId, hPolRow)
   
   global maxorder;
   global allDegs;
+  global input;
   
   % get HM of h
   hOrder = size(h, 2) - find(h, 1, 'first') + 1;
@@ -121,6 +126,7 @@ function [GNew, BNew, GNewRefs] = Update(GOld, BOld, h, GOldRefs, hMatrixId, hPo
   
   if size(GOld, 2) < maxorder
     GOld = [zeros(size(GOld, 1), maxorder - size(GOld, 2)), GOld];
+    GOldCoefs = [zeros(size(GOldCoefs, 1), maxorder - size(GOldCoefs, 2)), GOldCoefs];
   end
   
   D = zeros(0, maxorder);
@@ -223,6 +229,7 @@ function [GNew, BNew, GNewRefs] = Update(GOld, BOld, h, GOldRefs, hMatrixId, hPo
   
   GNew = zeros(0, maxorder);
   GNewRefs = zeros(0, 2);
+  GNewCoefs = zeros(0, maxorder);
   last = 0;
   % go thorought GOld
   for i = 1:size(GOld, 1)
@@ -234,12 +241,27 @@ function [GNew, BNew, GNewRefs] = Update(GOld, BOld, h, GOldRefs, hMatrixId, hPo
       last = last + 1;
       GNew(last, :) = GOld(i, :);
       GNewRefs(last, :) = GOldRefs(i, :);
+      GNewCoefs(last, :) = GOldCoefs(i, :);
     end
   end
   
   % add h into GNew
   GNew(end + 1, :) = h;
   GNewRefs(end + 1, :) = [hMatrixId, hPolRow];
+  
+  last = size(GNewCoefs, 1) + 1;
+  orders = size(h, 2) - find(h) + 1;
+  for order = orders
+    deg = allDegs(maxorder - order + 1, :);
+    if hMatrixId ~= 0
+      % input polynomial from some matrix F
+      GNewCoefs(last, maxorder - order + 1) = order;
+    else
+      % input polynomial from the input set
+      GNewCoefs(last, maxorder - order + 1) = input{hPolRow}.coefsIDX(find(ismember(input{hPolRow}.deg, deg, 'rows'), 1, 'first'));
+    end
+  end
+  
 end
 
 
@@ -304,7 +326,7 @@ function [F, traceRefs, traceCoefs] = SymbolicPreprocessing(L, G, FAll, FtAll)
   traceCoefs = zeros(length(L), maxorder);
   for i = 1:length(L)
     [monomial, polynomial, matrixId, polRow] = Simplify(L{i}.monomial, L{i}.polynomial, FAll, FtAll, L{i}.matrixId, L{i}.polRow);
-    [f, coefs] = Multiply(monomial, polynomial);
+    [f, coefs] = Multiply(monomial, polynomial, [matrixId, polRow]);
     if size(f, 2) > size(F, 2)
       F = [zeros(size(F, 1), size(f, 2) - size(F, 2)), F];
       traceCoefs = [zeros(size(traceCoefs, 1), size(coefs, 2) - size(traceCoefs, 2)), traceCoefs];
@@ -336,7 +358,7 @@ function [F, traceRefs, traceCoefs] = SymbolicPreprocessing(L, G, FAll, FtAll)
     for i = 1:size(headMonsGDegs, 1)
       if sum((allDegs(end - m + 1, :) - headMonsGDegs(i, :)) < 0) == 0
         [monomial, polynomial, matrixId, polRow] = Simplify(allDegs(end - m + 1, :) - headMonsGDegs(i, :), G(i, :), FAll, FtAll, GRefs(i, 1), GRefs(i, 2));
-        [f, coefs] = Multiply(monomial, polynomial);
+        [f, coefs] = Multiply(monomial, polynomial, [matrixId, polRow]);
         F = [F; f];
         traceRefs = [traceRefs; matrixId, polRow];
         traceCoefs = [traceCoefs; coefs];
@@ -407,7 +429,7 @@ end
 % Multiply
 % Multiplies monomial m and polynomial f
 
-function [polynomial, coefs] = Multiply(m, f)
+function [polynomial, coefs] = Multiply(m, f, source)
   
   global maxorder;
   global maxDeg;
@@ -415,6 +437,11 @@ function [polynomial, coefs] = Multiply(m, f)
   global allDegs;
   global allMons;
   global ordering;
+  global input;
+  
+  if nargin < 3
+    source = [-1 -1];
+  end
   
   polynomial = zeros(1, maxorder);
   coefs = zeros(1, maxorder);
@@ -437,8 +464,17 @@ function [polynomial, coefs] = Multiply(m, f)
       coefs = [zeros(1, maxorder - size(coefs, 2)), coefs];
     end
     
+    % numbers
     polynomial(1, maxorder - newOrder + 1) = f(1, size(f, 2) - order + 1);
-    coefs(1, maxorder - newOrder + 1) = order;
+    
+    % coefs
+    if source(1, 1) ~= 0
+      % from other matrix F
+      coefs(1, maxorder - newOrder + 1) = order;
+    else
+      % from input polynomial
+      coefs(1, maxorder - newOrder + 1) = input{source(1, 2)}.coefsIDX(find(ismember(input{source(1, 2)}.deg, deg, 'rows'), 1, 'first'));
+    end
   end
   
 end
