@@ -51,7 +51,7 @@ function [res, export] = gbs_CreateCode(codename, eq, known, unknown, kngroups, 
         export.aidx = aidx;
 
         if cfg.bGeneratorSolverResult
-            save(['out\' codename '_expparams'], 'export');
+            save(['solvers\' codename '_expparams'], 'export');
         end
 
         for tmp = cfg.exportCode
@@ -68,7 +68,7 @@ function [res, export] = gbs_CreateCode(codename, eq, known, unknown, kngroups, 
             if strcmpi(tmp{1}, 'matlab')
 
                 fprintf('--- generating MATLAB solver ---\n');
-                gbs_ExportMatlabCode(['./out/solver_' codename suffix], M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow, cfg);
+                gbs_ExportMatlabCode(['./solvers/solver_' codename suffix], M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow, cfg);
 
             elseif strcmpi(tmp{1}, 'maple')
                 fprintf('--- generating Maple solver ---\n');
@@ -76,7 +76,7 @@ function [res, export] = gbs_CreateCode(codename, eq, known, unknown, kngroups, 
                     suffix = '.txt';
                 end
                 
-                gbs_ExportMapleCode(['./out/solver_' codename suffix], M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow, cfg);
+                gbs_ExportMapleCode(['./solvers/solver_' codename suffix], M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow, cfg);
             else
                 try
                     fprintf('--- generating c solver using '' %s '' template---\n', tmp{1});
@@ -84,7 +84,7 @@ function [res, export] = gbs_CreateCode(codename, eq, known, unknown, kngroups, 
                         suffix = 'mex.c';
                     end
                     % warning: this function is not implemented in this package
-                    gbs_ExportCCode(['out\solver_' codename suffix], tmp{1}, M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow, cfg);
+                    gbs_ExportCCode(['solvers\solver_' codename suffix], tmp{1}, M, trace, coefscode, known, kngroups, unknown, algB, amVar, amrows, amcols, gjcols, aidx, PaToHWorkflow, cfg);
                 catch
                     fprintf('... error exporting using ''%s'' template---\n', tmp{1});
                 end
