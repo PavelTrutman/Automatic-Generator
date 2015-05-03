@@ -1,9 +1,9 @@
-% Template to generate MATLAB code of solvers using primitive method of
+% Template to generate MATLAB code of solvers using systematic method of
 % generating polynomials.
 
 % Pavel Trutman, pavel.trutman@fel.cvut.cz, April 2015
 
-function [ ] = CodeGen_Matlab_Primitive(trace, lastElim, gjcols, rrefPart, coefscode, fid)
+function [ ] = CodeGen_Matlab_systematic(trace, lastElim, gjcols, rrefPart, coefscode, fid)
 
   % coefs matrix
   trace{end}.Mcoefs = trace{end}.Mcoefs(:, gjcols);

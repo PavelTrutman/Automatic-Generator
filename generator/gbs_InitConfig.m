@@ -47,7 +47,7 @@ function [cfg] = gbs_InitConfig()
     
     % generator of polynomials
     % generate polynomials to selected degree
-    cfg.PolynomialsGenerator = 'Primitive';
+    cfg.PolynomialsGenerator = 'systematic';
     % config of this algorithm:
       % the total degree of the polynomials, we are generating polynomials up to, is inceased by GJstep after each GJ elimination
       % 0 means perform only one GJ elimination at the end

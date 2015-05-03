@@ -2,7 +2,7 @@ function [ret] = bench_gjstep_012(cfg)
   
   % generate MATLAB code only
   cfg.exportCode = {'matlab'};
-  cfg.PolynomialsGenerator = 'Primitive';
+  cfg.PolynomialsGenerator = 'systematic';
   
   % one elimination solver
   ret{1}.info = 'One elimination solver.';

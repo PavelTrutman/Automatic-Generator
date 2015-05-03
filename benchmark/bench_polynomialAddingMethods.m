@@ -3,11 +3,11 @@ function [ret] = bench_polynomialAddingMethods(cfg)
   % generate MATLAB code only
   cfg.exportCode = {'matlab'};
   
-  % solver using primitive method to add polynomials
-  ret{1}.info = 'Primitive solver.';
-  ret{1}.abbrev = 'primitive';
+  % solver using systematic method to add polynomials
+  ret{1}.info = 'Systematic solver.';
+  ret{1}.abbrev = 'systematic';
   ret{1}.cfg = cfg;
-  ret{1}.cfg.PolynomialsGenerator = 'Primitive';
+  ret{1}.cfg.PolynomialsGenerator = 'systematic';
   ret{1}.cfg.PolynomialsGeneratorCfg.GJstep = 0;
   
   % solver using methods of the F4 Algorithm to add polynomials
