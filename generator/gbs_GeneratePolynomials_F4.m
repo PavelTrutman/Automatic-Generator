@@ -176,6 +176,12 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
     
   end
+
+  % remove not necesary polynomials
+  filter = gbs_RemoveUnnecessary(G, amStats, foundVar, prime);
+  G = G(filter, :);
+  GCoefs = GCoefs(filter, :);
+  GRefs = GRefs(filter, :);
   
   trace{d + 1}.refs = GRefs;
   trace{d + 1}.coefs = GCoefs;
