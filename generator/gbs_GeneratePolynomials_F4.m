@@ -91,6 +91,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
       
       trace{d}.refs = traceRefs;
       trace{d}.coefs = traceCoefs;
+      trace{d}.nonzero = sort(find(sum(FNew) ~= 0), 'ascend');
       
       % insert new pairs
       for i = 1:size(Ftplus{d}, 1)
