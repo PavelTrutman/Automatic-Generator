@@ -81,26 +81,38 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     end
     
     % reducto
-    [Ftplus{d}, F{d}, Ft{d}, FRefs, traceRefs, traceCoefs] = Reduction(L{d}, G, F, Ft);
+    [FtplusNew, FNew, FtNew, FRefs, traceRefs, traceCoefs] = Reduction(L{d}, G, F, Ft);
     
-    trace{d}.refs = traceRefs;
-    trace{d}.coefs = traceCoefs;
+    if size(FtplusNew, 1) ~= 0
     
-    % insert new pairs
-    for i = 1:size(Ftplus{d}, 1)
-      [G, P, GRefs, GCoefs] = Update(G, P, Ftplus{d}(i, :), GRefs, GCoefs, d, FRefs(i, 1));
-    end
+      Ftplus{d} = FtplusNew;
+      F{d} = FNew;
+      Ft{d} = FtNew;
+      
+      trace{d}.refs = traceRefs;
+      trace{d}.coefs = traceCoefs;
+      
+      % insert new pairs
+      for i = 1:size(Ftplus{d}, 1)
+        [G, P, GRefs, GCoefs] = Update(G, P, Ftplus{d}(i, :), GRefs, GCoefs, d, FRefs(i, 1));
+      end
+      
+      % recompute  amStats
+      for a = 1:length(amStats)
+        amStats{a}.zero_el = setdiff(1:size(G, 2), (size(G, 2) + 1) - amStats{a}.algBidx);
+      end
+      
+      % check conditions for the action matrix
+      foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
+      
+      if foundVar
+        break;
+      end
     
-    % recompute  amStats
-    for a = 1:length(amStats)
-      amStats{a}.zero_el = setdiff(1:size(G, 2), (size(G, 2) + 1) - amStats{a}.algBidx);
-    end
-    
-    % check conditions for the action matrix
-    foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
-    
-    if foundVar
-      break;
+    else
+      %nothing added into G, therefore last elimination can be removed
+      fprintf('    Nothing is added into G, removing last elimination from the template\n');
+      d = d - 1;
     end
     
   end
