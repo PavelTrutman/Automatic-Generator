@@ -105,6 +105,78 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     
   end
 
+  if foundVar == 0
+    % add required polynomials to be able to build the action matrix
+    [foundVar, ordersReq] = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
+    
+    if max(ordersReq) > maxorder
+      % enlarge the matrix
+      while max(ordersReq) > maxorder
+        maxDeg = maxDeg + 1;
+        [mons, degs] = GenerateMonomials(maxDeg, unknowns, ordering);
+        allDegs = [degs; allDegs];
+        allMons = [mons, allMons];
+        maxorder = size(allMons, 2);
+      end
+      
+      G = [zeros(size(G, 1), maxorder - size(G, 2)) G];
+      GCoefs = [zeros(size(GCoefs, 1), maxorder - size(GCoefs, 2)) GCoefs];
+      
+      % recompute  amStats
+      for a = 1:length(amStats)
+        amStats{a}.zero_el = setdiff(1:size(G, 2), (size(G, 2) + 1) - amStats{a}.algBidx);
+      end
+      
+    end
+
+    % get head monomials and monomials of all polynomials from G
+    headMonsGDegs = zeros(size(G, 1), size(allDegs, 2));
+    monomials = [];
+    for i = 1:size(G, 1)
+      index = find(G(i, :));
+      headMonsGDegs(i, :) = allDegs(end - size(G, 2) + index(1), :);
+      monomials = [monomials, size(G, 2) - index + 1];
+    end
+    
+    done = unique(monomials);
+    
+    % add required polynomials
+    GAdd = zeros(length(ordersReq), maxorder);
+    GCoefsAdd = zeros(length(ordersReq), maxorder);
+    GRefsAdd = zeros(length(ordersReq), 2);
+    ordersReq = sort(ordersReq, 'descend');
+    i = 1;
+    while isempty(ordersReq) == 0
+      order = ordersReq(1);
+      done = [done, order];
+      ordersReq = setdiff(ordersReq, order);
+      reqDeg = allDegs(end - order + 1, :);
+      for j = 1:size(headMonsGDegs, 1)
+        if sum((reqDeg - headMonsGDegs(j, :)) < 0) == 0
+          [monomial, polynomial, matrixId, polRow] = Simplify(reqDeg - headMonsGDegs(j, :), G(j, :), F, Ft, GRefs(j, 1), GRefs(j, 2));
+          [f, coefs] = Multiply(monomial, polynomial, [matrixId, polRow]);
+          GAdd(i, :) = f;
+          GCoefsAdd(i, :) = coefs;
+          GRefsAdd(i, :) = [matrixId, polRow];
+          index = find(GAdd(i, :));
+          mons = size(GAdd, 2) - index + 1;
+          ordersReq = unique([ordersReq; setdiff(mons, done)]);
+          i = i + 1;
+          break;
+        end
+      end
+      
+    end
+    
+    G = [GAdd; G];
+    GCoefs = [GCoefsAdd; GCoefs];
+    GRefs = [GRefsAdd; GRefs];
+    
+    % check conditions for the action matrix
+    foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
+    
+  end
+  
   trace{d + 1}.refs = GRefs;
   trace{d + 1}.coefs = GCoefs;
   
