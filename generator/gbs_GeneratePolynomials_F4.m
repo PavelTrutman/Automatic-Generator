@@ -109,7 +109,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     % add required polynomials to be able to build the action matrix
     [foundVar, ordersReq] = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
     
-    if max(ordersReq) > maxorder
+    if (max(ordersReq) > maxorder) || (size(G, 2) < maxorder)
       % enlarge the matrix
       while max(ordersReq) > maxorder
         maxDeg = maxDeg + 1;

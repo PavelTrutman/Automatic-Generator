@@ -55,7 +55,7 @@ function [cfg] = gbs_InitConfig()
       
     % use strategies from F4 algorithm
     %cfg.PolynomialsGenerator = 'F4';
-    % config of this algorithm
+    % config of this algorithm:
       % define selection strategy of the F4 algorithm
       %cfg.PolynomialsGeneratorCfg.Sel = @F4_SelNormal;
     
