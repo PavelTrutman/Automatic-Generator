@@ -177,6 +177,15 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     
   end
 
+  nonzero = find(sum(G) ~= 0);
+  fprintf('Groebner basis of size %dx%d generated\n', size(G, 1), length(nonzero));
+  
+  % remove redundant polynomials
+  filter = gbs_RemoveRedundant(G, prime);
+  G = G(filter, :);
+  GCoefs = GCoefs(filter, :);
+  GRefs = GRefs(filter, :);
+  
   % remove not necesary polynomials
   filter = gbs_RemoveUnnecessary(G, amStats, foundVar, prime);
   G = G(filter, :);
@@ -352,10 +361,18 @@ function [Ftplus, F, Ft, FtRefs, traceRefs, traceCoefs] = Reduction(L, G, FAll, 
   global maxorder;
  
   [F, traceRefs, traceCoefs] = SymbolicPreprocessing(L, G, FAll, FtAll);
+  nonzero = find(sum(F) ~= 0);
+  fprintf('  Matrix of size %dx%d obtained\n', size(F, 1), length(nonzero));
+  
+  % remove redundant polynomials
+  filter = gbs_RemoveRedundant(F, prime);
+  F = F(filter, :);
+  traceRefs = traceRefs(filter, :);
+  traceCoefs = traceCoefs(filter, :);
   
   nonzero = find(sum(F) ~= 0);
   Kk = F(:, nonzero);
-  fprintf('  Reducing matrix %dx%d\n', size(Kk, 1), size(Kk, 2));
+  fprintf('    Reducing matrix %dx%d\n', size(Kk, 1), size(Kk, 2));
   B = gjzpsp(Kk, prime);
   Ft = zeros(size(F, 1), size(F, 2));
   Ft(:, nonzero) = B;
