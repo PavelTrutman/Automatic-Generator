@@ -1,4 +1,8 @@
-function [ret] = bench_polynomialAddingMethods(cfg)
+% Pavel Trutman, pavel.trutman@fel.cvut.cz, May 2015
+% 
+% Benchmark templates for benchmarking methods of generating polynomials.
+
+function [ret] = bench_polynomialGenerator(cfg)
   
   % generate MATLAB code only
   cfg.exportCode = {'matlab'};
