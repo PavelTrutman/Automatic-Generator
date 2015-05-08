@@ -62,9 +62,15 @@ function [results] = gbs_Benchmark(problemName, benchmarkFunction, inputData, co
     results{i}.benchData = cell(size(inputData, 1), 1);
     results{i}.time = zeros(size(inputData, 1), 1);
     for j = 1:min(size(inputData, 1), cfg.benchmark.maxInputs)
-      tic
-      results{i}.solution{j} = solver(inputData{j});
-      results{i}.time(j) = toc;
+      try
+        tic
+        results{i}.solution{j} = solver(inputData{j});
+        results{i}.time(j) = toc;
+      catch
+        fprintf('  solver executed on data %d failed!\n', j);
+        results{i}.solution{j} = zeros(length(unknown), 0);
+        results{i}.time(j) = NaN;
+      end
     end
     
     fprintf('Evaluating results.\n');
