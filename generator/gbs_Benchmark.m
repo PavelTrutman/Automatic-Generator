@@ -63,14 +63,14 @@ function [results] = gbs_Benchmark(problemName, benchmarkFunction, inputData, co
     results{i}.time = zeros(size(inputData, 1), 1);
     for j = 1:min(size(inputData, 1), cfg.benchmark.maxInputs)
       tic
-      [results{i}.solution{j}, results{i}.benchData{j}] = solver(inputData{j});
+      results{i}.solution{j} = solver(inputData{j});
       results{i}.time(j) = toc;
     end
     
     fprintf('Evaluating results.\n');
     
     % get errors of solutions
-    results{i}.err = validationFunction(inputData, correctOutput, results{i}.solution, results{i}.benchData, unknown, cfg);
+    results{i}.err = validationFunction(inputData, correctOutput, results{i}.solution, eq, unknown, known);
     
     % render results
     renderFunction(results{i}, benchmark, length(benchmarkConfig), i);

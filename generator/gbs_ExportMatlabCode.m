@@ -49,7 +49,7 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
   fprintf(fid, '%%     ECCV 2008, Marseille, France, October 12-18, 2008\n');
   fprintf(fid, '\n');
   if cfg.benchmark.enable
-    fprintf(fid, ['function [unknowns, benchData] = ' probname '(args)\n\n']);
+    fprintf(fid, ['function [unknowns] = ' probname '(args)\n\n']);
   else
     fprintf(fid, ['function [' c2s((unknown), ', ') '] = ' probname '(' c2s(knvarnames, ', ') ')\n\n']);
   end
@@ -164,9 +164,6 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
     for i = 1:length(unknown)
       fprintf(fid, ['\tunknowns(', int2str(i), ', :) = ', c2s(unknown(i)), ';\n']);
     end
-    fprintf(fid, '\n');
-    fprintf(fid, ['\tbenchData.polynomials = zeros([', l2s(size(M), ' '), ']);\n']);
-    fprintf(fid, ['\tbenchData.polynomials(:, [', l2s(gjcols, ' '), ']) = M;\n']);
     fprintf(fid, '\n');
   end
   
