@@ -72,7 +72,7 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
     for j=1:length(knvars)
       if length(knvars{j}) > 1
         for k=1:length(knvars{j})
-          coefcode = regexprep([coefcode, ' '], ['(', char(knvars{j}(k)), ')[^(0-9]'], [knvarnames{j} '(' int2str(k) ')']);
+          coefcode = regexprep([coefcode, ' '], [char(knvars{j}(k)), '([^0-9\(])'], [knvarnames{j} '(' int2str(k) ')$1']);
         end
       end
     end
