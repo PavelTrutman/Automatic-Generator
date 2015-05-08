@@ -241,7 +241,7 @@ function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, known
           if strcmp(elim.type, 'divide')
             fprintf(fid, ['> \tM[', int2str(elim.row), ', 1..-1] := M[', int2str(elim.row), ', 1..-1]/M[', int2str(elim.row), ', ', int2str(elim.col), ']:\n']);
           elseif strcmp(elim.type, 'switch')
-            fprintf(fid, ['> \tM[[', l2s(elim.rows, ', '), '], 1..-1] := M[[', l2s(elim.rows(end:1), ', '), '], 1..-1]:\n']);
+            fprintf(fid, ['> \tM[[', l2s(elim.rows, ', '), '], 1..-1] := M[[', l2s(elim.rows(end:-1:1), ', '), '], 1..-1]:\n']);
           elseif strcmp(elim.type, 'eliminate')
             fprintf(fid, ['> \tM[', int2str(elim.row), ', 1..-1] := M[', int2str(elim.row), ', 1..-1] - M[', int2str(elim.row), ', ', int2str(elim.col), ']*M[', int2str(elim.pivotRow), ', 1..-1]:\n']);
           end
