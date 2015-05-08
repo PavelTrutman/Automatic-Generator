@@ -31,7 +31,7 @@ function [err] = validateZeroPolynomials(inputData, ~, solution, eq, unknown, kn
     
     % prepare vector of knowns
     substitute = cell(size(symbolic));
-    substitute(1, 1:length(known)) = num2cell(inputData{i}');
+    substitute(1, 1:length(known)) = num2cell(reshape(inputData{i}', 1, length(known)));
     
     % for each solution
     for j = 1:size(solution{i}, 2);
