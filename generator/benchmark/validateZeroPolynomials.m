@@ -26,6 +26,7 @@ function [err] = validateZeroPolynomials(inputData, ~, solution, eq, unknown, kn
   % prepare all syms into one vector
   symbolic = [known, unknown];
   
+  reverseStr = '';
   % for each inputData
   for i = 1:size(inputData, 1)
     
@@ -50,6 +51,11 @@ function [err] = validateZeroPolynomials(inputData, ~, solution, eq, unknown, kn
       err(i, j) = sum(double(subs(eq, symbolic, substitute)));
       
     end
+    
+    msg = sprintf('  %2.0f %%%% done', i/size(inputData, 1)*100);
+    fprintf([reverseStr, msg]);
+    reverseStr = repmat(sprintf('\b'), 1, length(msg) - 1);
   end
+  fprintf(reverseStr);
   
 end
