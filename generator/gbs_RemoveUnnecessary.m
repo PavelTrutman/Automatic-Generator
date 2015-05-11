@@ -13,7 +13,7 @@
 function [filter] = gbs_RemoveUnnecessary(M, amStats, foundVar, prime)
 
   % remove not necesary polynomials
-  fprintf('Removing not necesary polynomials\n');
+  fprintf('Removing not necessary polynomials:');
   rows = size(M, 1);
   step = max([floor(rows/32) 1]);
   up = 1;
@@ -26,23 +26,20 @@ function [filter] = gbs_RemoveUnnecessary(M, amStats, foundVar, prime)
       step = down - up + 1;
     end
     
-    if step > 1
-      fprintf('  removing equation %d - %d ', up, down);
-    else
-      fprintf('  removing equation %d ', down);
-    end
-    
     filterOld = filter;
     filter = setdiff(filter, up:down);
     
     var = gbs_CheckActionMatrixConditions(M(filter, :), amStats, false, prime);
     
     if var == foundVar
-      fprintf('succeeded\n');
+      if step > 1
+        fprintf([' ', int2str(up), '-', int2str(down)]);
+      else
+        fprintf([' ', int2str(down)]);
+      end
       up = down + 1;
       step = 2*step;
     else
-      fprintf('failed\n');
       if step == 1
         up = up + 1;
       else
@@ -52,5 +49,6 @@ function [filter] = gbs_RemoveUnnecessary(M, amStats, foundVar, prime)
     end
     
   end
+  fprintf('\n');
   
 end
