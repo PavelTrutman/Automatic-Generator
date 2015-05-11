@@ -16,7 +16,7 @@ function [eqi] = gbs_RandomInstanceZp(cfg, eq, known, unknown)
 
     fprintf('Creating random instance in Z_%d for %d equations\n', cfg.prime, length(eq));
     
-    t = clock();
+    reverseStr = '';
     for i=1:length(eq)
 
         st = char(expand(eq(i)));
@@ -40,16 +40,16 @@ function [eqi] = gbs_RandomInstanceZp(cfg, eq, known, unknown)
             end
             
             prev = els(j);
-            
-            dt = etime(clock, t);
-            if (dt > 2)
 
-                fprintf(' %d of %d equations instanced [subterm %d / %d]\n', i, length(eq), j, size(els, 2));
-                t = clock();
-            end            
+            % print status
+            msg = sprintf('  instancing %d equation of %d (%2.0f %%%%)\n', i, length(eq), j/ size(els, 2)*100);
+            fprintf([reverseStr msg]);
+            reverseStr = repmat(sprintf('\b'), 1, length(msg) - 1);
+          
         end
         
         eqi(i) = p1;
         %eqi2(i) = eval(eq(i));
     end
+    fprintf(reverseStr);
 end
