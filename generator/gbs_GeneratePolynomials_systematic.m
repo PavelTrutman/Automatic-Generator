@@ -1,7 +1,7 @@
 % Generate all polynomials required to build an action matrix. Polynomials
 % are generated without any strategy.
 % by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, March 2015
+% last edit by Pavel Trutman, May 2015
 
 function [foundVar, M, trace] = gbs_GeneratePolynomials_systematic(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, algorithmCfg)
 
@@ -243,7 +243,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_systematic(p, eq, unknow
     
     %matrix partitioning for elimination
     if strcmp(cfg.matrixPartitioning, 'all')
-      [~, partitioning] = gbs_MatrixPartitioning(M, [], true, cfg.prime);
+      [~, partitioning] = gbs_MatrixPartitioning(M(:, nonzero), [], true, cfg.prime);
       partitioning.enable = 1;
     else
       partitioning.enable = 0;
@@ -255,6 +255,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_systematic(p, eq, unknow
       trace{iteration}.MGJ = MGJ;
       trace{iteration}.nonzerocols = nonzero;
       trace{iteration}.partitioning = partitioning;
+      trace{iteration}.size = size(Mcoefs);
       if iteration > 1
         trace{iteration}.rowfrom = size(Mcoefs, 1) - trace{iteration}.rowsold + 1;
         trace{iteration}.rowto = size(Mcoefs, 1);
@@ -292,6 +293,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_systematic(p, eq, unknow
     trace{iteration}.filter = filter(filter >= trace{iteration}.rowfrom) - trace{iteration}.rowfrom + 1;
     trace{iteration}.rowfrom = size(filter(filter < trace{iteration}.rowfrom), 2) + 1;
     trace{iteration}.rowto = size(filter, 2);
+    trace{iteration}.size = size(trace{iteration}.Mcoefs);
   end
   
 end
