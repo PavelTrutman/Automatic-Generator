@@ -248,7 +248,14 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_systematic(p, eq, unknow
     trace{iteration}.nonzerocols = find(sum(M) ~= 0);
   end
   if iteration == 1
-    
+    %matrix partitioning for elimination
+    if strcmp(cfg.matrixPartitioning, 'all')
+      [~, partitioning] = gbs_MatrixPartitioning(M(:, nonzero), [], true, cfg.prime);
+      partitioning.enable = 1;
+    else
+      partitioning.enable = 0;
+    end
+    trace{iteration}.partitioning = partitioning;
   else
     trace{iteration}.filter = filter(filter >= trace{iteration}.rowfrom) - trace{iteration}.rowfrom + 1;
     trace{iteration}.rowfrom = size(filter(filter < trace{iteration}.rowfrom), 2) + 1;
