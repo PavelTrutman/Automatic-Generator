@@ -49,7 +49,7 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
   fprintf(fid, '%%     ECCV 2008, Marseille, France, October 12-18, 2008\n');
   fprintf(fid, '\n');
   if cfg.benchmark.enable
-    fprintf(fid, ['function [unknowns] = ' probname '(args)\n\n']);
+    fprintf(fid, ['function [unknowns, time] = ' probname '(args)\n\n']);
   else
     fprintf(fid, ['function [' c2s((unknown), ', ') '] = ' probname '(' c2s(knvarnames, ', ') ')\n\n']);
   end
@@ -59,6 +59,8 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
     for i = 1:length(knvarnames)
       fprintf(fid, ['\t', c2s(knvarnames(i)), ' = args(', int2str(i), ', :);\n']);
     end
+    fprintf(fid, '\n');
+    fprintf(fid, '\ttic;\n');
     fprintf(fid, '\n');
   end
   
@@ -159,6 +161,8 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
   fprintf(fid, '\tend\n');
   
   if cfg.benchmark.enable
+    fprintf(fid, '\n');
+    fprintf(fid, '\ttime = toc;\n');
     fprintf(fid, '\n');
     fprintf(fid, '\t%%save benchmark data\n');
     for i = 1:length(unknown)

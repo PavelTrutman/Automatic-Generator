@@ -64,9 +64,7 @@ function [results] = gbs_Benchmark(problemName, benchmarkFunction, inputData, co
     reverseStr = '';
     for j = 1:min(size(inputData, 1), cfg.benchmark.maxInputs)
       try
-        tic
-        results{i}.solution{j} = solver(inputData{j});
-        results{i}.time(j) = toc;
+        [results{i}.solution{j}, results{i}.time(j)] = solver(inputData{j});
         msg = sprintf('  %2.0f %%%% done', j/min(size(inputData, 1), cfg.benchmark.maxInputs)*100);
         fprintf([reverseStr, msg]);
         reverseStr = repmat(sprintf('\b'), 1, length(msg) - 1);
