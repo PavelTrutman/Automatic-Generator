@@ -44,7 +44,13 @@ function [ ] = CodeGen_Maple_F4(trace, lastElim, gjcols, rrefPart, coefscode, fi
       end
     end
   end
-  fprintf(fid, '> \tM := ReducedRowEchelonForm(M);\n');
+  if lastElim.enable
+    % last elimination with partitioning
+    rrefPart(lastElim, 'M', 1);
+  else
+    % without partitioning
+    fprintf(fid, '> \tM := ReducedRowEchelonForm(M);\n');
+  end
   fprintf(fid, '> \t\n');
   
 end

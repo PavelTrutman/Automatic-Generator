@@ -43,6 +43,13 @@ function [ ] = CodeGen_Matlab_F4(trace, lastElim, gjcols, rrefPart, coefscode, f
       end
     end
   end
-  fprintf(fid, '\tM = rref(M);\n\n');
+  
+  if lastElim.enable
+    % last elimination with partitioning
+    rrefPart(lastElim, 'M', 1);
+  else
+    % without partitioning
+    fprintf(fid, '\tM = rref(M);\n\n');
+  end
   
 end
