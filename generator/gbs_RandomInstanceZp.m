@@ -42,7 +42,7 @@ function [eqi] = gbs_RandomInstanceZp(cfg, eq, known, unknown)
             prev = els(j);
 
             % print status
-            msg = sprintf('  instancing %d equation of %d (%2.0f %%%%)\n', i, length(eq), j/ size(els, 2)*100);
+            msg = sprintf('  instancing %d equation of %d (%2.0f %%%%)', i, length(eq), j/ size(els, 2)*100);
             fprintf([reverseStr msg]);
             reverseStr = repmat(sprintf('\b'), 1, length(msg) - 1);
           
