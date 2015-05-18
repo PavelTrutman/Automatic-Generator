@@ -56,12 +56,6 @@ function [ ] = CodeGen_Matlab_systematic(trace, lastElim, gjcols, rrefPart, coef
       matrixName = ['M', int2str(i)];
       trace{i}.Mcoefs = trace{i}.Mcoefs(:, trace{i}.nonzerocols);
     end
-    %if trace{i - 1}.partitioning.enable
-    %  fprintf(fid, ['\tMold = M;\n']);
-    %else
-    %  fprintf(fid, ['\tMold = zeros(' int2str(size(trace{i - 1}.Mcoefs, 1)) ', ' int2str(size(trace{i - 1}.Mcoefs, 2)) ');\n']);
-    %  fprintf(fid, ['\tMold(:, [' l2s(trace{i - 1}.nonzerocols, ' ') ']) = M;\n']);
-    %end
     fprintf(fid, ['\t', matrixName, ' = zeros(' int2str(size(trace{i}.Mcoefs, 1)) ', ' int2str(size(trace{i}.Mcoefs, 2)) ');\n']);
     if isfield(trace{i}, 'filter')
       oldColumns = gjcols - trace{i}.columnfrom + 1;
@@ -74,12 +68,14 @@ function [ ] = CodeGen_Matlab_systematic(trace, lastElim, gjcols, rrefPart, coef
       fprintf(fid, ['\t', matrixName, '(' int2str(trace{i}.rowfrom) ':' int2str(trace{i}.rowto) ', [', l2s(newCols, ' '), ']) = M', int2str(i-1), '(1:', int2str(trace{i}.rowsold), ', :);\n']);
     end
 
-    [ofs] = find(trace{i}.Mcoefs);
-    for j = ofs'
-      [k, l] = ind2sub(trace{i-1}.size, trace{i}.Mcoefs(j));
+    [~, ~, vals] = find(trace{i}.Mcoefs);
+    vals = unique(vals);
+    for v = vals'
+      pos = find(trace{i}.Mcoefs == v);
+      [k, l] = ind2sub(trace{i-1}.size, v);
       l = find(trace{i-1}.nonzerocols == l, 1, 'first');
       idx = sub2ind(trace{i-1}.size, k, l);
-      fprintf(fid, ['\t', matrixName, '(' int2str(j) ') = M', int2str(i-1), '(' int2str(idx) ');\n']);
+      fprintf(fid, ['\t', matrixName, '([' l2s(pos, ' ') ']) = M', int2str(i-1), '(' int2str(idx) ');\n']);
     end
     
     % elimination part
