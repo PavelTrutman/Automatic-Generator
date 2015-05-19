@@ -17,13 +17,13 @@ function [results] = gbs_Benchmark(problemName, benchmarkFunction, inputData, co
   
   % parse input parameters
   if nargin < 3
-    % if no inputData -> no output data, we have to generate random inputs
+    % if no inputData, we have to generate random inputs
     inputData = generateInputData(eq, known, unknown, kngroups, cfg.benchmark.maxInputs);
-    correctOutput = [];
   end
   if nargin < 4
-    % default zero of polznomials
+    % default zero of polynomials
     validationFunction = @validateZeroPolynomials;
+    correctOutput = [];
   end
   if nargin < 6
     % default histogram
