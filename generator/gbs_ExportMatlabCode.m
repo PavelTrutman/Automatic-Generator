@@ -182,44 +182,52 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
     
     %first part of matrix
     mat1Cols = [workflow.noAmCols(:, [workflow.ACols1; workflow.BCols]) workflow.amCols];
-    fprintf(fid, ['\tmat1 = ', matrixName, '([', l2s(workflow.PRows1, ' '), '], [', l2s(mat1Cols, ' '), ']);\n']);
-    fprintf(fid, ['\tmat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']) = rref(mat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']));\n']);
+    %fprintf(fid, ['\tmat1 = ', matrixName, '([', l2s(workflow.PRows1, ' '), '], [', l2s(mat1Cols, ' '), ']);\n']);
+    %fprintf(fid, ['\tmat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']) = rref(mat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']));\n']);
+    fprintf(fid, ['\tmat1 = zeros([', l2s([length(workflow.PRows1) length(mat1Cols)], ' '), ']);\n']);
+    fprintf(fid, ['\tmat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']) = rref(', matrixName, '([', l2s(workflow.PRows1, ' '), '], [', l2s(mat1Cols(workflow.mat1NonzeroCols), ' '), ']));\n']);
     
     %second part of matrix
     mat2Cols = [workflow.noAmCols(:, [workflow.ACols2; workflow.BCols]) workflow.amCols];
-    fprintf(fid, ['\tmat2 = ', matrixName, '([', l2s(workflow.PRows2, ' '), '], [', l2s(mat2Cols, ' '), ']);\n']);
-    fprintf(fid, ['\tmat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']) = rref(mat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']));\n\n']);
+    %fprintf(fid, ['\tmat2 = ', matrixName, '([', l2s(workflow.PRows2, ' '), '], [', l2s(mat2Cols, ' '), ']);\n']);
+    %fprintf(fid, ['\tmat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']) = rref(mat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']));\n\n']);
+    fprintf(fid, ['\tmat2 = zeros([', l2s([length(workflow.PRows2) length(mat2Cols)], ' '), ']);\n']);
+    fprintf(fid, ['\tmat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']) = rref(', matrixName, '([', l2s(workflow.PRows2, ' '), '], [', l2s(mat2Cols(workflow.mat2NonzeroCols), ' '), ']));\n']);
     
     %assemble both parts together
     fprintf(fid, ['\t', matrixName, ' = zeros([', l2s(size(workflow.res), ' '), ']);\n']);
-    if size(workflow.mat1TopRows, 2) ~= 0
+    if size(workflow.mat1TopRows, 2) + size(workflow.mat1BottRows, 2) ~= 0
       resMat1TopRows = workflow.resMat1TopRows;
-      if ~last
-        resMat1TopRows = workflow.permutationRows(resMat1TopRows);
-      end
-      fprintf(fid, ['\t', matrixName, '([', l2s(resMat1TopRows, ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s(workflow.mat1TopRows, ' '), '], :);\n']);
-    end
-    if size(workflow.mat2TopRows, 2) ~= 0
-      resMat2TopRows = workflow.resMat2TopRows;
-      if ~last
-        resMat2TopRows = workflow.permutationRows(resMat2TopRows);
-      end
-      fprintf(fid, ['\t', matrixName, '([', l2s(resMat2TopRows, ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s(workflow.mat2TopRows, ' '), '], :);\n']);
-    end
-    if size(workflow.mat1BottRows, 2) ~= 0
       resMat1BottRows = workflow.resMat1BottRows;
       if ~last
-        resMat1BottRows = workflow.permutationRows(resMat1BottRows);
+        resMat1TopRows = workflow.permutationRows(resMat1TopRows)';
+        resMat1BottRows = workflow.permutationRows(resMat1BottRows)';
       end
-      fprintf(fid, ['\t', matrixName, '([', l2s(resMat1BottRows, ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s(workflow.mat1BottRows, ' '), '], :);\n']);
+      fprintf(fid, ['\t', matrixName, '([', l2s([resMat1TopRows resMat1BottRows], ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s([workflow.mat1TopRows workflow.mat1BottRows], ' '), '], :);\n']);
     end
-    if size(workflow.mat2BottRows, 2) ~= 0
+    if size(workflow.mat2TopRows, 2) + size(workflow.mat2BottRows, 2) ~= 0
+      resMat2TopRows = workflow.resMat2TopRows;
       resMat2BottRows = workflow.resMat2BottRows;
       if ~last
-        resMat2BottRows = workflow.permutationRows(resMat2BottRows);
+        resMat2TopRows = workflow.permutationRows(resMat2TopRows)';
+        resMat2BottRows = workflow.permutationRows(resMat2BottRows)';
       end
-      fprintf(fid, ['\t', matrixName, '([', l2s(resMat2BottRows, ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s(workflow.mat2BottRows, ' '), '], :);\n']);
+      fprintf(fid, ['\t', matrixName, '([', l2s([resMat2TopRows resMat2BottRows], ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s([workflow.mat2TopRows workflow.mat2BottRows], ' '), '], :);\n']);
     end
+    %if size(workflow.mat1BottRows, 2) ~= 0
+    %  resMat1BottRows = workflow.resMat1BottRows;
+    %  if ~last
+    %    resMat1BottRows = workflow.permutationRows(resMat1BottRows);
+    %  end
+    %  fprintf(fid, ['\t', matrixName, '([', l2s(resMat1BottRows, ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s(workflow.mat1BottRows, ' '), '], :);\n']);
+    %end
+    %if size(workflow.mat2BottRows, 2) ~= 0
+    %  resMat2BottRows = workflow.resMat2BottRows;
+    %  if ~last
+    %    resMat2BottRows = workflow.permutationRows(resMat2BottRows);
+    %  end
+    %  fprintf(fid, ['\t', matrixName, '([', l2s(resMat2BottRows, ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s(workflow.mat2BottRows, ' '), '], :);\n']);
+    %end
     
     %eliminate bottom rows of the matrix
     if size(workflow.bottomRows, 2) ~= 0
