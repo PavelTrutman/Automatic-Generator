@@ -1,7 +1,7 @@
 % Generate Matlab Code for given action matrix and coefficient matrices
 % (GBsolver subroutine)
 % by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, April 2015
+% last edit by Pavel Trutman, May 2015
 
 
 function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, knowngroups, unknown, algB, actMvar, amrows, amcols, gjcols, aidx, lastElim, cfg)
@@ -48,17 +48,19 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
   fprintf(fid, '%%     Kukelova Z., Bujnak M., Pajdla T., Automatic Generator of Minimal Problem Solvers,\n');
   fprintf(fid, '%%     ECCV 2008, Marseille, France, October 12-18, 2008\n');
   fprintf(fid, '\n');
-  if cfg.benchmark
-    fprintf(fid, ['function [unknowns, benchData] = ' probname '(args)\n\n']);
+  if cfg.benchmark.enable
+    fprintf(fid, ['function [unknowns, time] = ' probname '(args)\n\n']);
   else
     fprintf(fid, ['function [' c2s((unknown), ', ') '] = ' probname '(' c2s(knvarnames, ', ') ')\n\n']);
   end
 
-  if cfg.benchmark
+  if cfg.benchmark.enable
     fprintf(fid, '\t%% This is a benchmark solver!\n\n');
     for i = 1:length(knvarnames)
       fprintf(fid, ['\t', c2s(knvarnames(i)), ' = args(', int2str(i), ', :);\n']);
     end
+    fprintf(fid, '\n');
+    fprintf(fid, '\ttic;\n');
     fprintf(fid, '\n');
   end
   
@@ -72,7 +74,7 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
     for j=1:length(knvars)
       if length(knvars{j}) > 1
         for k=1:length(knvars{j})
-          coefcode = regexprep([coefcode, ' '], ['(', char(knvars{j}(k)), ')[^(0-9]'], [knvarnames{j} '(' int2str(k) ')']);
+          coefcode = regexprep([coefcode, ' '], [char(knvars{j}(k)), '([^0-9\(])'], [knvarnames{j} '(' int2str(k) ')$1']);
         end
       end
     end
@@ -158,15 +160,14 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
 
   fprintf(fid, '\tend\n');
   
-  if cfg.benchmark
+  if cfg.benchmark.enable
+    fprintf(fid, '\n');
+    fprintf(fid, '\ttime = toc;\n');
     fprintf(fid, '\n');
     fprintf(fid, '\t%%save benchmark data\n');
     for i = 1:length(unknown)
       fprintf(fid, ['\tunknowns(', int2str(i), ', :) = ', c2s(unknown(i)), ';\n']);
     end
-    fprintf(fid, '\n');
-    fprintf(fid, ['\tbenchData.polynomials = zeros([', l2s(size(M), ' '), ']);\n']);
-    fprintf(fid, ['\tbenchData.polynomials(:, [', l2s(gjcols, ' '), ']) = M;\n']);
     fprintf(fid, '\n');
   end
   
@@ -175,50 +176,58 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
   fclose(fid);
   
   
-  function [] = rrefPart(workflow, last)
+  function [] = rrefPart(workflow, matrixName, last)
     %matrix elimination with partitioning
     fprintf(fid, '\n\t%%GJ elimination with partitioning\n');
     
     %first part of matrix
     mat1Cols = [workflow.noAmCols(:, [workflow.ACols1; workflow.BCols]) workflow.amCols];
-    fprintf(fid, ['\tmat1 = M([', l2s(workflow.PRows1, ' '), '], [', l2s(mat1Cols, ' '), ']);\n']);
-    fprintf(fid, ['\tmat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']) = rref(mat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']));\n']);
+    %fprintf(fid, ['\tmat1 = ', matrixName, '([', l2s(workflow.PRows1, ' '), '], [', l2s(mat1Cols, ' '), ']);\n']);
+    %fprintf(fid, ['\tmat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']) = rref(mat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']));\n']);
+    fprintf(fid, ['\tmat1 = zeros([', l2s([length(workflow.PRows1) length(mat1Cols)], ' '), ']);\n']);
+    fprintf(fid, ['\tmat1(:, [', l2s(workflow.mat1NonzeroCols, ' '), ']) = rref(', matrixName, '([', l2s(workflow.PRows1, ' '), '], [', l2s(mat1Cols(workflow.mat1NonzeroCols), ' '), ']));\n']);
     
     %second part of matrix
     mat2Cols = [workflow.noAmCols(:, [workflow.ACols2; workflow.BCols]) workflow.amCols];
-    fprintf(fid, ['\tmat2 = M([', l2s(workflow.PRows2, ' '), '], [', l2s(mat2Cols, ' '), ']);\n']);
-    fprintf(fid, ['\tmat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']) = rref(mat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']));\n\n']);
+    %fprintf(fid, ['\tmat2 = ', matrixName, '([', l2s(workflow.PRows2, ' '), '], [', l2s(mat2Cols, ' '), ']);\n']);
+    %fprintf(fid, ['\tmat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']) = rref(mat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']));\n\n']);
+    fprintf(fid, ['\tmat2 = zeros([', l2s([length(workflow.PRows2) length(mat2Cols)], ' '), ']);\n']);
+    fprintf(fid, ['\tmat2(:, [', l2s(workflow.mat2NonzeroCols, ' '), ']) = rref(', matrixName, '([', l2s(workflow.PRows2, ' '), '], [', l2s(mat2Cols(workflow.mat2NonzeroCols), ' '), ']));\n']);
     
     %assemble both parts together
-    fprintf(fid, ['\tM = zeros([', l2s(size(workflow.res), ' '), ']);\n']);
-    if size(workflow.mat1TopRows, 2) ~= 0
+    fprintf(fid, ['\t', matrixName, ' = zeros([', l2s(size(workflow.res), ' '), ']);\n']);
+    if size(workflow.mat1TopRows, 2) + size(workflow.mat1BottRows, 2) ~= 0
       resMat1TopRows = workflow.resMat1TopRows;
-      if ~last
-        resMat1TopRows = workflow.permutationRows(resMat1TopRows);
-      end
-      fprintf(fid, ['\tM([', l2s(resMat1TopRows, ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s(workflow.mat1TopRows, ' '), '], :);\n']);
-    end
-    if size(workflow.mat2TopRows, 2) ~= 0
-      resMat2TopRows = workflow.resMat2TopRows;
-      if ~last
-        resMat2TopRows = workflow.permutationRows(resMat2TopRows);
-      end
-      fprintf(fid, ['\tM([', l2s(resMat2TopRows, ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s(workflow.mat2TopRows, ' '), '], :);\n']);
-    end
-    if size(workflow.mat1BottRows, 2) ~= 0
       resMat1BottRows = workflow.resMat1BottRows;
       if ~last
-        resMat1BottRows = workflow.permutationRows(resMat1BottRows);
+        resMat1TopRows = workflow.permutationRows(resMat1TopRows)';
+        resMat1BottRows = workflow.permutationRows(resMat1BottRows)';
       end
-      fprintf(fid, ['\tM([', l2s(resMat1BottRows, ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s(workflow.mat1BottRows, ' '), '], :);\n']);
+      fprintf(fid, ['\t', matrixName, '([', l2s([resMat1TopRows resMat1BottRows], ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s([workflow.mat1TopRows workflow.mat1BottRows], ' '), '], :);\n']);
     end
-    if size(workflow.mat2BottRows, 2) ~= 0
+    if size(workflow.mat2TopRows, 2) + size(workflow.mat2BottRows, 2) ~= 0
+      resMat2TopRows = workflow.resMat2TopRows;
       resMat2BottRows = workflow.resMat2BottRows;
       if ~last
-        resMat2BottRows = workflow.permutationRows(resMat2BottRows);
+        resMat2TopRows = workflow.permutationRows(resMat2TopRows)';
+        resMat2BottRows = workflow.permutationRows(resMat2BottRows)';
       end
-      fprintf(fid, ['\tM([', l2s(resMat2BottRows, ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s(workflow.mat2BottRows, ' '), '], :);\n']);
+      fprintf(fid, ['\t', matrixName, '([', l2s([resMat2TopRows resMat2BottRows], ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s([workflow.mat2TopRows workflow.mat2BottRows], ' '), '], :);\n']);
     end
+    %if size(workflow.mat1BottRows, 2) ~= 0
+    %  resMat1BottRows = workflow.resMat1BottRows;
+    %  if ~last
+    %    resMat1BottRows = workflow.permutationRows(resMat1BottRows);
+    %  end
+    %  fprintf(fid, ['\t', matrixName, '([', l2s(resMat1BottRows, ' '), '], [', l2s(mat1Cols, ' '), ']) = mat1([', l2s(workflow.mat1BottRows, ' '), '], :);\n']);
+    %end
+    %if size(workflow.mat2BottRows, 2) ~= 0
+    %  resMat2BottRows = workflow.resMat2BottRows;
+    %  if ~last
+    %    resMat2BottRows = workflow.permutationRows(resMat2BottRows);
+    %  end
+    %  fprintf(fid, ['\t', matrixName, '([', l2s(resMat2BottRows, ' '), '], [', l2s(mat2Cols, ' '), ']) = mat2([', l2s(workflow.mat2BottRows, ' '), '], :);\n']);
+    %end
     
     %eliminate bottom rows of the matrix
     if size(workflow.bottomRows, 2) ~= 0
@@ -226,7 +235,7 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
       if ~last
         bottomRows = workflow.permutationRows(bottomRows);
       end
-      fprintf(fid, ['\tM([', l2s(bottomRows, ' '), '], [', l2s(workflow.resBottNonzeroCols, ' '), ']) = rref(M([', l2s(bottomRows, ' '), '], [', l2s(workflow.resBottNonzeroCols, ' '), ']));\n']);
+      fprintf(fid, ['\t', matrixName, '([', l2s(bottomRows, ' '), '], [', l2s(workflow.resBottNonzeroCols, ' '), ']) = rref(', matrixName, '([', l2s(bottomRows, ' '), '], [', l2s(workflow.resBottNonzeroCols, ' '), ']));\n']);
     end
     
     fprintf(fid, '\n');
@@ -242,7 +251,7 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
           for row = elimRows'
             if row > 0
               if workflow.res(row, col) ~= 0
-                fprintf(fid, ['\tM(', int2str(row), ', :) = M(', int2str(row), ', :) - M(', int2str(row), ', ', int2str(col), ')*M(', int2str(pivotRow), ', :);\n']);
+                fprintf(fid, ['\t', matrixName, '(', int2str(row), ', :) = ', matrixName, '(', int2str(row), ', :) - ', matrixName, '(', int2str(row), ', ', int2str(col), ')*', matrixName, '(', int2str(pivotRow), ', :);\n']);
               end
             end
           end
@@ -255,11 +264,11 @@ function [res] = gbs_ExportMatlabCode(filename, M, trace, coefscode, known, know
         for elim = workflow.elim
           elim = elim{1};
           if strcmp(elim.type, 'divide')
-            fprintf(fid, ['\tM(', int2str(elim.row), ', :) = M(', int2str(elim.row), ', :)/M(', int2str(elim.row), ', ', int2str(elim.col), ');\n']);
+            fprintf(fid, ['\t', matrixName, '(', int2str(elim.row), ', :) = ', matrixName, '(', int2str(elim.row), ', :)/', matrixName, '(', int2str(elim.row), ', ', int2str(elim.col), ');\n']);
           elseif strcmp(elim.type, 'switch')
-            fprintf(fid, ['\tM([', l2s(elim.rows, ' '), '], :) = M([', l2s(elim.rows(end:1), ' '), '], :);\n']);
+            fprintf(fid, ['\t', matrixName, '([', l2s(elim.rows, ' '), '], :) = ', matrixName, '([', l2s(elim.rows(end:-1:1), ' '), '], :);\n']);
           elseif strcmp(elim.type, 'eliminate')
-            fprintf(fid, ['\tM(', int2str(elim.row), ', :) = M(', int2str(elim.row), ', :) - M(', int2str(elim.row), ', ', int2str(elim.col), ')*M(', int2str(elim.pivotRow), ', :);\n']);
+            fprintf(fid, ['\t', matrixName, '(', int2str(elim.row), ', :) = ', matrixName, '(', int2str(elim.row), ', :) - ', matrixName, '(', int2str(elim.row), ', ', int2str(elim.col), ')*', matrixName, '(', int2str(elim.pivotRow), ', :);\n']);
           end
         end
       end

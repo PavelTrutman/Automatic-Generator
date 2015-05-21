@@ -10,7 +10,7 @@ Problem Solvers, ECCV 2008, Marseille, France, October 12-18, 2008
 Please refer to the license.txt for licensing details.
 
 
-MS Windows Installation
+Installation
 -----------------------
 
 This package does not require any installation. Package contains all 
@@ -58,7 +58,7 @@ Using matrix patitioning
 ------------------------
 
 To enable matrix patitioning change variable "cfg.cfg.matrixPartitioning" 
-in config file "generator\gbs_InitConfig.m" according to description in 
+in config file "generator\gbs_InitConfig.m" according to the description in 
 this file.
 
 This package uses tool PaToH to partition sparse matrices to speed up the 
@@ -71,7 +71,7 @@ see instructions enclosed in these packages.
 Limitations
 -----------
 
-This package has been tested on Matlab 2014 64bit and 32bit. Code 
+This package has been tested on Matlab 2015 64bit and 32bit. Code 
 generator does not handle all cases when basis of algebra A does not 
 contain action matrix variable. Then, eigenvalues of the action matrix are 
 solutions to the action variable and corresponding eigenvectors contain 

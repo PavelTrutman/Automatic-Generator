@@ -81,30 +81,130 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     end
     
     % reducto
-    [Ftplus{d}, F{d}, Ft{d}, FRefs, traceRefs, traceCoefs] = Reduction(L{d}, G, F, Ft);
+    [FtplusNew, FNew, FtNew, FRefs, traceRefs, traceCoefs] = Reduction(L{d}, G, F, Ft);
     
-    trace{d}.refs = traceRefs;
-    trace{d}.coefs = traceCoefs;
+    if size(FtplusNew, 1) ~= 0
     
-    % insert new pairs
-    for i = 1:size(Ftplus{d}, 1)
-      [G, P, GRefs, GCoefs] = Update(G, P, Ftplus{d}(i, :), GRefs, GCoefs, d, FRefs(i, 1));
-    end
+      Ftplus{d} = FtplusNew;
+      F{d} = FNew;
+      Ft{d} = FtNew;
+      
+      trace{d}.refs = traceRefs;
+      trace{d}.coefs = traceCoefs;
+      trace{d}.nonzero = sort(find(sum(FNew) ~= 0), 'ascend');
+      
+      % insert new pairs
+      for i = 1:size(Ftplus{d}, 1)
+        [G, P, GRefs, GCoefs] = Update(G, P, Ftplus{d}(i, :), GRefs, GCoefs, d, FRefs(i, 1));
+      end
+      
+      % recompute  amStats
+      for a = 1:length(amStats)
+        amStats{a}.zero_el = setdiff(1:size(G, 2), (size(G, 2) + 1) - amStats{a}.algBidx);
+      end
+      
+      % check conditions for the action matrix
+      foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
+      
+      if foundVar
+        break;
+      end
     
-    % recompute  amStats
-    for a = 1:length(amStats)
-      amStats{a}.zero_el = setdiff(1:size(G, 2), (size(G, 2) + 1) - amStats{a}.algBidx);
-    end
-    
-    % check conditions for the action matrix
-    foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
-    
-    if foundVar
-      break;
+    else
+      %nothing added into G, therefore last elimination can be removed
+      fprintf('    Nothing is added into G, removing last elimination from the template\n');
+      d = d - 1;
     end
     
   end
 
+  if foundVar == 0
+    % add required polynomials to be able to build the action matrix
+    [foundVar, ordersReq] = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
+    
+    if (max(ordersReq) > maxorder) || (size(G, 2) < maxorder)
+      % enlarge the matrix
+      while max(ordersReq) > maxorder
+        maxDeg = maxDeg + 1;
+        [mons, degs] = GenerateMonomials(maxDeg, unknowns, ordering);
+        allDegs = [degs; allDegs];
+        allMons = [mons, allMons];
+        maxorder = size(allMons, 2);
+      end
+      
+      G = [zeros(size(G, 1), maxorder - size(G, 2)) G];
+      GCoefs = [zeros(size(GCoefs, 1), maxorder - size(GCoefs, 2)) GCoefs];
+      
+      % recompute  amStats
+      for a = 1:length(amStats)
+        amStats{a}.zero_el = setdiff(1:size(G, 2), (size(G, 2) + 1) - amStats{a}.algBidx);
+      end
+      
+    end
+
+    % get head monomials and monomials of all polynomials from G
+    headMonsGDegs = zeros(size(G, 1), size(allDegs, 2));
+    monomials = [];
+    for i = 1:size(G, 1)
+      index = find(G(i, :));
+      headMonsGDegs(i, :) = allDegs(end - size(G, 2) + index(1), :);
+      monomials = [monomials, size(G, 2) - index + 1];
+    end
+    
+    done = unique(monomials);
+    
+    % add required polynomials
+    GAdd = zeros(length(ordersReq), maxorder);
+    GCoefsAdd = zeros(length(ordersReq), maxorder);
+    GRefsAdd = zeros(length(ordersReq), 2);
+    ordersReq = sort(ordersReq, 'descend');
+    i = 1;
+    while isempty(ordersReq) == 0
+      order = ordersReq(1);
+      done = [done, order];
+      ordersReq = setdiff(ordersReq, order);
+      reqDeg = allDegs(end - order + 1, :);
+      for j = 1:size(headMonsGDegs, 1)
+        if sum((reqDeg - headMonsGDegs(j, :)) < 0) == 0
+          [monomial, polynomial, matrixId, polRow] = Simplify(reqDeg - headMonsGDegs(j, :), G(j, :), F, Ft, GRefs(j, 1), GRefs(j, 2));
+          [f, coefs] = Multiply(monomial, polynomial, [matrixId, polRow]);
+          GAdd(i, :) = f;
+          GCoefsAdd(i, :) = coefs;
+          GRefsAdd(i, :) = [matrixId, polRow];
+          index = find(GAdd(i, :));
+          mons = size(GAdd, 2) - index + 1;
+          ordersReq = unique([ordersReq; setdiff(mons, done)]);
+          i = i + 1;
+          break;
+        end
+      end
+      
+    end
+    
+    G = [GAdd; G];
+    GCoefs = [GCoefsAdd; GCoefs];
+    GRefs = [GRefsAdd; GRefs];
+    
+    % check conditions for the action matrix
+    foundVar = gbs_CheckActionMatrixConditions(G, amStats, false, prime);
+    
+  end
+
+  nonzero = find(sum(G) ~= 0);
+  fprintf('Groebner basis of size %dx%d generated\n', size(G, 1), length(nonzero));
+  
+  % remove redundant polynomials
+  filter = gbs_RemoveRedundant(G, prime);
+  G = G(filter, :);
+  GCoefs = GCoefs(filter, :);
+  GRefs = GRefs(filter, :);
+  
+  % remove not necesary polynomials
+  filter = gbs_RemoveUnnecessary(G, amStats, foundVar, prime);
+  G = G(filter, :);
+  GCoefs = GCoefs(filter, :);
+  GRefs = GRefs(filter, :);
+  
   trace{d + 1}.refs = GRefs;
   trace{d + 1}.coefs = GCoefs;
   
@@ -274,10 +374,18 @@ function [Ftplus, F, Ft, FtRefs, traceRefs, traceCoefs] = Reduction(L, G, FAll, 
   global maxorder;
  
   [F, traceRefs, traceCoefs] = SymbolicPreprocessing(L, G, FAll, FtAll);
+  nonzero = find(sum(F) ~= 0);
+  fprintf('  Matrix of size %dx%d obtained\n', size(F, 1), length(nonzero));
+  
+  % remove redundant polynomials
+  filter = gbs_RemoveRedundant(F, prime);
+  F = F(filter, :);
+  traceRefs = traceRefs(filter, :);
+  traceCoefs = traceCoefs(filter, :);
   
   nonzero = find(sum(F) ~= 0);
   Kk = F(:, nonzero);
-  fprintf('  Reducing matrix %dx%d\n', size(Kk, 1), size(Kk, 2));
+  fprintf('    Reducing matrix %dx%d\n', size(Kk, 1), size(Kk, 2));
   B = gjzpsp(Kk, prime);
   Ft = zeros(size(F, 1), size(F, 2));
   Ft(:, nonzero) = B;

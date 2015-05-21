@@ -1,9 +1,9 @@
 % Generate all polynomials required to build an action matrix. Polynomials
 % are generated without any strategy.
 % by Martin Bujnak, mar2008
-% last edit by Pavel Trutman, March 2015
+% last edit by Pavel Trutman, May 2015
 
-function [foundVar, M, trace] = gbs_GeneratePolynomials_Primitive(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, algorithmCfg)
+function [foundVar, M, trace] = gbs_GeneratePolynomials_systematic(p, eq, unknown, maxdeg, alldegs, allmonsdeg, allmons, amStats, cfg, algorithmCfg)
 
   prime = cfg.prime;
   GJstep = algorithmCfg.GJstep;
@@ -173,56 +173,17 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_Primitive(p, eq, unknown
     
     
     % remove not necesary polynomials
-    toRemove = size(find(sum(MGJ, 2) == 0), 1);
-    if toRemove > 0
-      fprintf('    %d equations can be removed', toRemove);
-      usedRows = size(find(sum(MGJ, 2) ~= 0), 1);
-      removed = 0;
-      step = max([floor(toRemove/4) 1]);
-      up = 1;
-      filter = 1:size(M, 1);
-      while up <= size(M, 1)
-        down = up + step - 1;
-        if down > size(M, 1)
-          down = size(M, 1);
-          step = down - up + 1;
-        end
-        filterOld = filter;
-        filter = setdiff(filter, up:down);
-        
-        Kk = M(filter, nonzero);
-        B = gjzpsp(Kk, prime);
-        
-        if size(find(sum(B, 2) ~= 0), 1) < usedRows
-          if step == 1
-            up = up + 1;
-          else
-            step = max([floor(step/4) 1]);
-          end
-          filter = filterOld;
-        else
-          removed = removed + step;
-          if removed == toRemove
-            fprintf(' - all removed');
-            break;
-          end
-          up = down + 1;
-          step = min([2*step toRemove-removed]);
-        end
-        
-      end
-      fprintf('\n');
-      
-      M = M(filter, :);
-      Mcoefs = Mcoefs(filter, :);
-      nonzero = find(sum(M) ~= 0);
-      Kk = M(:, nonzero);
-      B = gjzpsp(Kk, prime);
-      MGJ = zeros(size(M, 1), size(M, 2));
-      MGJ(:, nonzero) = B;
-    end
+    filter = gbs_RemoveRedundant(M, prime);
+ 
+    M = M(filter, :);
+    Mcoefs = Mcoefs(filter, :);
+    nonzero = find(sum(M) ~= 0);
+    Kk = M(:, nonzero);
+    B = gjzpsp(Kk, prime);
+    MGJ = zeros(size(M, 1), size(M, 2));
+    MGJ(:, nonzero) = B;
     
-    fprintf('    GJ elimination performed on matrix with size %dx%d\n', size(M, 1), cols);
+    fprintf('    GJ elimination performed on matrix with size %dx%d\n', size(M, 1), length(nonzero));
     
     equationsAdded = size(find(sum(MGJ, 2) ~= 0), 1);
     if equationsAddedOld >= equationsAdded
@@ -242,7 +203,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_Primitive(p, eq, unknown
     
     %matrix partitioning for elimination
     if strcmp(cfg.matrixPartitioning, 'all')
-      [~, partitioning] = gbs_MatrixPartitioning(M, [], true, cfg.prime);
+      [~, partitioning] = gbs_MatrixPartitioning(M(:, nonzero), [], true, cfg.prime);
       partitioning.enable = 1;
     else
       partitioning.enable = 0;
@@ -254,6 +215,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_Primitive(p, eq, unknown
       trace{iteration}.MGJ = MGJ;
       trace{iteration}.nonzerocols = nonzero;
       trace{iteration}.partitioning = partitioning;
+      trace{iteration}.size = size(Mcoefs);
       if iteration > 1
         trace{iteration}.rowfrom = size(Mcoefs, 1) - trace{iteration}.rowsold + 1;
         trace{iteration}.rowto = size(Mcoefs, 1);
@@ -272,45 +234,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_Primitive(p, eq, unknown
   foundVar = var;
   
   % remove not necesary polynomials
-  fprintf('Removing not necesary polynomials\n');
-  rows = size(M, 1);
-  step = max([floor(rows/32) 1]);
-  up = 1;
-  filter = 1:rows;
-  
-  while up <= rows
-    down = up + step - 1;
-    if down > rows
-      down = rows;
-      step = down - up + 1;
-    end
-    
-    if step > 1
-      fprintf('  removing equation %d - %d ', up, down);
-    else
-      fprintf('  removing equation %d ', down);
-    end
-    
-    filterOld = filter;
-    filter = setdiff(filter, up:down);
-    
-    var = gbs_CheckActionMatrixConditions(M(filter, :), amStats, false, prime);
-    
-    if var == foundVar
-      fprintf('succeeded\n');
-      up = down + 1;
-      step = 2*step;
-    else
-      fprintf('failed\n');
-      if step == 1
-        up = up + 1;
-      else
-        step = max([floor(step/4) 1]);
-      end
-      filter = filterOld;
-    end
-    
-  end
+  filter = gbs_RemoveUnnecessary(M, amStats, foundVar, prime);
   
   if iteration ~= 1
     iteration = iteration - 1;
@@ -324,11 +248,19 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_Primitive(p, eq, unknown
     trace{iteration}.nonzerocols = find(sum(M) ~= 0);
   end
   if iteration == 1
-    
+    %matrix partitioning for elimination
+    if strcmp(cfg.matrixPartitioning, 'all')
+      [~, partitioning] = gbs_MatrixPartitioning(M(:, nonzero), [], true, cfg.prime);
+      partitioning.enable = 1;
+    else
+      partitioning.enable = 0;
+    end
+    trace{iteration}.partitioning = partitioning;
   else
     trace{iteration}.filter = filter(filter >= trace{iteration}.rowfrom) - trace{iteration}.rowfrom + 1;
     trace{iteration}.rowfrom = size(filter(filter < trace{iteration}.rowfrom), 2) + 1;
     trace{iteration}.rowto = size(filter, 2);
+    trace{iteration}.size = size(trace{iteration}.Mcoefs);
   end
   
 end
