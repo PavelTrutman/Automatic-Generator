@@ -200,7 +200,9 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   GRefs = GRefs(filter, :);
   
   % remove not necesary polynomials
-  filter = gbs_RemoveUnnecessary(G, amStats, foundVar, prime);
+  RemoveUnnecessary = str2func(['gbs_RemoveUnnecessary_', cfg.RemoveUnnecessary]);
+  [filter, foundVar] = RemoveUnnecessary(G, amStats, foundVar, prime);
+  %filter = gbs_RemoveUnnecessary(G, amStats, foundVar, prime);
   G = G(filter, :);
   GCoefs = GCoefs(filter, :);
   GRefs = GRefs(filter, :);

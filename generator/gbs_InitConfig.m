@@ -51,7 +51,7 @@ function [cfg] = gbs_InitConfig()
     % config of this algorithm:
       % the total degree of the polynomials, we are generating polynomials up to, is inceased by GJstep after each GJ elimination
       % 0 means perform only one GJ elimination at the end
-      cfg.PolynomialsGeneratorCfg.GJstep = 0;
+      cfg.PolynomialsGeneratorCfg.GJstep = 1;
       
     % use strategies from F4 algorithm
     %cfg.PolynomialsGenerator = 'F4';
@@ -59,6 +59,12 @@ function [cfg] = gbs_InitConfig()
       % define selection strategy of the F4 algorithm
       %cfg.PolynomialsGeneratorCfg.Sel = @F4_SelNormal;
     
+    % removing unnecessary polynomials
+    % remove polynomials without fixed solution
+    cfg.RemoveUnnecessary = 'nonfixed';
+      
+    % remove polynomials without fixed solution
+    %cfg.RemoveUnnecessary = 'fixed';
     
     % use matrix partitioning (by PaToH)
     % how to set up this external library see the 'installation.txt', this library is not available for Windows

@@ -1,7 +1,7 @@
 % Pavel Trutman, pavel.trutman@fel.cvut.cz, May 2015
 %
 % Remove polynomials that are not necessary for building of the action
-% matrix.
+% matrix with fixed solution for one variable.
 %
 % M - a matrix from which we are removing polynomials
 % amStats - inforamtion about what is required for buiding of the action
@@ -10,7 +10,7 @@
 % prime - we are computing modulo this prime
 % filter - a list of rows that have to remain in the matrix M
 
-function [filter] = gbs_RemoveUnnecessary(M, amStats, foundVar, prime)
+function [filter, foundVar] = gbs_RemoveUnnecessary_fixed(M, amStats, foundVar, prime)
 
   % remove not necesary polynomials
   fprintf('Removing not necessary polynomials:');
@@ -37,6 +37,7 @@ function [filter] = gbs_RemoveUnnecessary(M, amStats, foundVar, prime)
       else
         fprintf([' ', int2str(down)]);
       end
+      foundVar = var;
       up = down + 1;
       step = 2*step;
     else
