@@ -9,7 +9,7 @@
 % validationFunction - function called to evaluate the results
 % renderFunction - function to render results
 
-function [results] = gbs_Benchmark(problemName, benchmarkFunction, inputData, correctOutput, validationFunction, renderFunction)
+function [results, inputData] = gbs_Benchmark(problemName, benchmarkFunction, inputData, correctOutput, validationFunction, renderFunction)
   
   % get minimal problem definition
   problem = str2func(problemName);
@@ -79,12 +79,11 @@ function [results] = gbs_Benchmark(problemName, benchmarkFunction, inputData, co
     fprintf(reverseStr);
     
     fprintf('Evaluating results.\n');
-    
     % get errors of solutions
     results{i}.err = validationFunction(inputData, correctOutput, results{i}.solution, eq, unknown, known);
     
     % render results
-    renderFunction(results{i}, benchmark, length(benchmarkConfig), i);
+    renderFunction(results{i}, benchmark, length(benchmarkConfig), i, false);
     
   end
 
