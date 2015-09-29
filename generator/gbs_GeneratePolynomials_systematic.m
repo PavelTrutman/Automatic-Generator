@@ -234,7 +234,8 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_systematic(p, eq, unknow
   foundVar = var;
   
   % remove not necesary polynomials
-  filter = gbs_RemoveUnnecessary(M, amStats, foundVar, prime);
+  RemoveUnnecessary = str2func(['gbs_RemoveUnnecessary_', cfg.RemoveUnnecessary]);
+  [filter, foundVar] = RemoveUnnecessary(M, amStats, foundVar, prime);
   
   if iteration ~= 1
     iteration = iteration - 1;
