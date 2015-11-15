@@ -113,7 +113,7 @@ function [foundVar, M, trace] = gbs_GeneratePolynomials_systematic(p, eq, unknow
         for a=1:length(amStats)
           amStats{a}.zero_el = setdiff(1:cols, (cols+1)-amStats{a}.algBidx);
         end
-        fprintf('  Coefficient matrix reallocaction, adding %d (%d degree) monomials\n', length(mons), todeg);
+        fprintf('  Coefficient matrix reallocation, adding %d (%d degree) monomials\n', length(mons), todeg);
       end
       fprintf('  %d equations added\n', rows - rowsold);
       
