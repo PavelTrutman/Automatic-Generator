@@ -151,33 +151,3 @@ function [M, trace, symcoefs, amVar, amLT, amLTall, algBidx, algB] = gbs_Prepare
         algBidx = amStats{foundVar}.algBidx;
     end
 end
-
-%{
-function [M, Mcoefs] = gbs_ReallocMatrix(M, Mcoefs, torows, tocols)
-
-    crows = size(M, 1);
-    ccols = size(M, 2);
-    
-    if crows ~= torows
-        
-        M = [M; zeros(torows - crows, ccols)];
-        Mcoefs = [Mcoefs; zeros(torows - crows, ccols)];
-    end
-    
-    if ccols ~= tocols
-               
-        % shift coefs
-        newcols = zeros(torows, tocols - ccols);
-        M = [newcols M];
-        Mcoefs = [newcols Mcoefs];
-    end
-end
-%}
-
-%{
-function [c] = InvZp(x, p)
-
-    [g,c] = gcd(x,-p);
-    c = mod(c,p);
-end
-%}
