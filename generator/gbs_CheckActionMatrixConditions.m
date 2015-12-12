@@ -10,12 +10,7 @@ function [res, ordersReq] = gbs_CheckActionMatrixConditions(M, amStats, isElim, 
         nonzero = find(sum(M) ~= 0);
         Kk = M(:, nonzero);
 
-        gjtime = cputime;
         B = gjzpsp(Kk, prime);
-        gjtime = cputime - gjtime;
-        if (gjtime > 0.5)
-            fprintf('\t[t:%.2fsec]\t', gjtime);
-        end
 
         M = zeros(size(M, 1), size(M, 2));
         M(:, nonzero) = B;

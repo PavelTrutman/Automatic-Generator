@@ -15,8 +15,10 @@ function [filter] = gbs_RemoveRedundant(M, prime)
   
   toRemove = size(find(sum(B, 2) == 0), 1);
   filter = 1:size(M, 1);
+  
+  reverseStr = '';
   if toRemove > 0
-    fprintf('    %d equations can be removed', toRemove);
+    fprintf('    removing %d equations', toRemove);
     usedRows = size(find(sum(B, 2) ~= 0), 1);
     removed = 0;
     step = max([floor(toRemove/4) 1]);
@@ -42,13 +44,20 @@ function [filter] = gbs_RemoveRedundant(M, prime)
         filter = filterOld;
       else
         removed = removed + step;
+        
         if removed == toRemove
+          fprintf(reverseStr);
           fprintf(' - all removed');
           break;
         end
         up = down + 1;
         step = min([2*step toRemove-removed]);
       end
+      
+      % print progress
+      msg = sprintf(' (%2.0f %%%% removed, remaining %d equations to check)', floor(removed/toRemove*100), size(M, 1) - up);
+      fprintf([reverseStr msg]);
+      reverseStr = repmat(sprintf('\b'), 1, length(msg) - 1);
       
     end
     fprintf('\n');
