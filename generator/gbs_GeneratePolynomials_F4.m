@@ -173,7 +173,8 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
           GRefsAdd(i, :) = [matrixId, polRow];
           index = find(GAdd(i, :));
           mons = size(GAdd, 2) - index + 1;
-          ordersReq = unique([ordersReq; setdiff(mons, done)]);
+          ordersReq = unique([ordersReq, setdiff(mons, done)]);
+          ordersReq = sort(ordersReq, 'descend');
           i = i + 1;
           break;
         end
