@@ -112,7 +112,7 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
     
     else
       %nothing added into G, therefore last elimination can be removed
-      fprintf('    Nothing was added into G, last elimination removed from the template\n');
+      fprintf('    Nothing was added into G, last elimination was removed from the template\n');
       d = d - 1;
     end
     
