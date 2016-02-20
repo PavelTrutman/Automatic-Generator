@@ -142,7 +142,7 @@ function [res] = gbs_ExportMapleCode(filename, M, trace, coefscode, known, known
   for i=1:ucnt
 
     if unksidx(i) == 0
-      fprintf(fid, ['> \t\t' unknown{i} '[i] := evalf(D1[ i, i]) \n']);
+      fprintf(fid, ['> \t\t' unknown{i} '[i] := evalf(D1(i)): \n']);
     else
       fprintf(fid, ['> \t\t' unknown{i} '[i] := evalf(V1[' int2str(unksidx(i)) ', i]) / evalf(V1[' int2str(oneidx) ', i]): \n']);
     end
