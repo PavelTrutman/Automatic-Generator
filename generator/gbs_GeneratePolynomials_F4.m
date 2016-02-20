@@ -380,6 +380,15 @@ function [Ftplus, F, Ft, FtRefs, traceRefs, traceCoefs] = Reduction(L, G, FAll, 
   nonzero = find(sum(F) ~= 0);
   fprintf('  Matrix of size %dx%d obtained\n', size(F, 1), length(nonzero));
   
+  % pick head monomials
+  HM = zeros(0, 1);
+  for i = 1:size(F, 1)
+    index = find(F(i, :), 1, 'first');
+    if ~isempty(index)
+      HM = [HM; index];
+    end
+  end
+  
   % remove redundant polynomials
   filter = gbs_RemoveRedundant(F, prime);
   F = F(filter, :);
@@ -392,15 +401,6 @@ function [Ftplus, F, Ft, FtRefs, traceRefs, traceCoefs] = Reduction(L, G, FAll, 
   B = gjzpsp(Kk, prime);
   Ft = zeros(size(F, 1), size(F, 2));
   Ft(:, nonzero) = B;
-  
-  % pick head monomials
-  HM = zeros(0, 1);
-  for i = 1:size(F, 1)
-    index = find(F(i, :), 1, 'first');
-    if ~isempty(index)
-      HM = [HM; index];
-    end
-  end
   
   % pick rows with new head monomials
   last = 0;
