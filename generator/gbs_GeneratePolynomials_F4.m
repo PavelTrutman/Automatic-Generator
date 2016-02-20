@@ -80,11 +80,12 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
       end
     end
     
+    fprintf('  %d polynomials selected\n', size(L{d}, 2));
+
     % reducto
     [FtplusNew, FNew, FtNew, FRefs, traceRefs, traceCoefs] = Reduction(L{d}, G, F, Ft);
     
     if size(FtplusNew, 1) ~= 0
-    
       Ftplus{d} = FtplusNew;
       F{d} = FNew;
       Ft{d} = FtNew;
@@ -203,7 +204,6 @@ function [foundVar, G, trace] = gbs_GeneratePolynomials_F4(p, eq, unknown, maxde
   % remove not necesary polynomials
   RemoveUnnecessary = str2func(['gbs_RemoveUnnecessary_', cfg.RemoveUnnecessary]);
   [filter, foundVar] = RemoveUnnecessary(G, amStats, foundVar, prime);
-  %filter = gbs_RemoveUnnecessary(G, amStats, foundVar, prime);
   G = G(filter, :);
   GCoefs = GCoefs(filter, :);
   GRefs = GRefs(filter, :);
